@@ -20,5 +20,10 @@
 #GET http://127.0.0.1:8080/api/health/range?from=2026-01-01&to=2026-01-31
 #Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
 
-GET http://127.0.0.1:8080/api/health/analysis/latest
+
+#GET http://127.0.0.1:8080/api/health/report/weekly
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
+
+GET http://127.0.0.1:8080/api/health/report/weekly/pdf
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
+
