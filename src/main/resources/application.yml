@@ -1,0 +1,30 @@
+server:
+  port: 8080 # 项目端口
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver # MySQL8驱动
+    url: jdbc:mysql://localhost:3306/project03?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root # 数据库账号
+    password: 123456 # 数据库密码
+
+  redis:
+    host: localhost # Redis地址
+    port: 6379      # Redis端口
+    timeout: 3000ms # 超时时间
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true # 下划线转驼峰
+  global-config:
+    db-config:
+      id-type: auto # 主键自增
+
+jwt:
+  secret: "project03_jwt_secret_key_32_bytes_minimum"
+  expireMinutes: 120
+
+
+  mybatis-plus:
+    mapper-locations: classpath*:/mapper/**/*.xml # 你没有xml也不影响
+
