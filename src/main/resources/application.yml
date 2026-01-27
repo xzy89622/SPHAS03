@@ -19,12 +19,8 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto # 主键自增
+  mapper-locations: classpath*:/mapper/**/*.xml # 没有xml也不影响（但写在这儿更规范）
 
 jwt:
   secret: "project03_jwt_secret_key_32_bytes_minimum"
   expireMinutes: 10080
-
-
-  mybatis-plus:
-    mapper-locations: classpath*:/mapper/**/*.xml # 你没有xml也不影响
-
