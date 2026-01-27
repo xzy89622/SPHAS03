@@ -24,6 +24,12 @@
 #GET http://127.0.0.1:8080/api/health/report/weekly
 #Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
 
+#GET http://127.0.0.1:8080/api/health/report/weekly/pdf
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
+
+
 GET http://127.0.0.1:8080/api/health/report/weekly/pdf
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0OTM1MzksImV4cCI6MTc3MDA5ODMzOX0.FS57U1tbOlT1TU431tkpwK1lvjMCVP7765gUjkJTcnY
+
+
 

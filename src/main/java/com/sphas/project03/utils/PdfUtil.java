@@ -6,7 +6,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
-
+import java.io.InputStream; // 读取resources字体
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 
@@ -24,8 +24,15 @@ public class PdfUtil {
 
             // ✅ 1) 加载中文字体（Windows 常见字体路径）
             // 优先微软雅黑，其次宋体（你电脑大概率都有）
-            File fontFile = pickFontFile();
-            PDType0Font font = PDType0Font.load(doc, fontFile);
+            // 1) 从resources加载字体（不依赖电脑字体）
+            InputStream is = PdfUtil.class.getResourceAsStream(
+                    "/fonts/AlibabaPuHuiTi-2-55-Regular.ttf"
+            );
+            if (is == null) {
+                throw new RuntimeException("字体文件未找到：/fonts/AlibabaPuHuiTi-2-55-Regular.ttf");
+            }
+            PDType0Font font = PDType0Font.load(doc, is);
+
 
             try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
 
@@ -86,23 +93,23 @@ public class PdfUtil {
     }
 
     // 选一个可用的系统字体
-    private static File pickFontFile() {
-        // ✅ 优先用 TTF（最稳）
-        File yahei = new File("C:\\Windows\\Fonts\\msyh.ttf");   // 微软雅黑 ttf
-        if (yahei.exists()) return yahei;
-
-        File simhei = new File("C:\\Windows\\Fonts\\simhei.ttf"); // 黑体 ttf
-        if (simhei.exists()) return simhei;
-
-        // ⚠️ 最后才用 TTC（有些环境会解析失败）
-        File yaheiTtc = new File("C:\\Windows\\Fonts\\msyh.ttc");
-        if (yaheiTtc.exists()) return yaheiTtc;
-
-        File simsunTtc = new File("C:\\Windows\\Fonts\\simsun.ttc");
-        if (simsunTtc.exists()) return simsunTtc;
-
-        throw new RuntimeException("找不到可用中文字体，请检查 C:\\Windows\\Fonts");
-    }
+//    private static File pickFontFile() {
+//        // ✅ 优先用 TTF（最稳）
+//        File yahei = new File("C:\\Windows\\Fonts\\msyh.ttf");   // 微软雅黑 ttf
+//        if (yahei.exists()) return yahei;
+//
+//        File simhei = new File("C:\\Windows\\Fonts\\simhei.ttf"); // 黑体 ttf
+//        if (simhei.exists()) return simhei;
+//
+//        // ⚠️ 最后才用 TTC（有些环境会解析失败）
+//        File yaheiTtc = new File("C:\\Windows\\Fonts\\msyh.ttc");
+//        if (yaheiTtc.exists()) return yaheiTtc;
+//
+//        File simsunTtc = new File("C:\\Windows\\Fonts\\simsun.ttc");
+//        if (simsunTtc.exists()) return simsunTtc;
+//
+//        throw new RuntimeException("找不到可用中文字体，请检查 C:\\Windows\\Fonts");
+//    }
 
     private static String safe(Object o) {
         return o == null ? "-" : String.valueOf(o);
