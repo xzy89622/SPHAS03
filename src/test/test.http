@@ -77,15 +77,71 @@
 
 
 ### 上传反馈图片（显式指定 multipart + boundary）
-POST http://localhost:8080/api/feedback/upload
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-Content-Type: multipart/form-data; boundary=boundary
+#POST http://localhost:8080/api/feedback/upload
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+#Content-Type: multipart/form-data; boundary=boundary
+#
+#--boundary
+#Content-Disposition: form-data; name="file"; filename="test.png"
+#Content-Type: image/png
+#
+#< D:/SPHAS/SPHAS_03/SPHAS/upload/feedback/test.png
+#--boundary--
 
---boundary
-Content-Disposition: form-data; name="file"; filename="test.png"
-Content-Type: image/png
+#POST http://localhost:8080/api/feedback/submit
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+#Content-Type: application/json
+#
+#{
+#  "title": "反馈标题",
+#  "content": "反馈内容",
+#  "attachmentUrls": [
+#    "http://localhost:8080/upload/feedback/test.png"
+#  ]
+#}
 
-< D:/SPHAS/SPHAS_03/SPHAS/upload/feedback/test.png
---boundary--
+#GET http://localhost:8080/api/feedback/1/detail
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+
+#POST http://localhost:8080/api/feedback/submit
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+#Content-Type: application/json
+#
+#{
+#  "title": "反馈标题",
+#  "content": "反馈内容",
+#  "attachmentUrls": [
+#    "http://localhost:8080/upload/feedback/test.png"
+#  ]
+#}
 
 
+#GET http://localhost:8080/api/feedback/3/detail
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+
+#GET http://localhost:8080/api/feedback/3/detail
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+
+#POST http://localhost:8080/api/auth/register
+#Content-Type: application/json
+#
+#{
+#  "username": "admin01",
+#  "password": "123456"
+#}
+
+#POST http://localhost:8080/api/auth/login
+#Content-Type: application/json
+#
+#{
+#  "username": "admin01",
+#  "password": "123456"
+#}
+
+POST http://localhost:8080/api/feedback/3/reply
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1OTcwNDcsImV4cCI6MTc3MDIwMTg0N30.-KVqBI63YsJJjRxxzsyZO5DKozqNPpDtJa3K9puK400
+Content-Type: application/json
+
+{
+"content": "这是管理员回复"
+}
