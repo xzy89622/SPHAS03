@@ -28,8 +28,64 @@
 #Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
 
 
-GET http://127.0.0.1:8080/api/health/report/weekly/pdf
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0OTM1MzksImV4cCI6MTc3MDA5ODMzOX0.FS57U1tbOlT1TU431tkpwK1lvjMCVP7765gUjkJTcnY
 
+#POST http://localhost:8080/api/auth/login
+#Content-Type: application/json
+#
+#{
+#  "username": "test01",
+#  "password": "123456"
+#}
+
+#GET http://localhost:8080/api/article/list
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+
+#POST http://localhost:8080/api/article/admin/publish
+#Content-Type: application/json
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+#
+#{
+#  "title": "健康饮食小常识",
+#  "summary": "每天吃什么更健康",
+#  "coverUrl": "https://example.com/a.jpg",
+#  "content": "少油少盐，多吃蔬菜水果，坚持运动。"
+#}
+
+#GET http://localhost:8080/api/article/list
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+
+#GET http://localhost:8080/api/feedback/my
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+
+#POST http://localhost:8080/api/feedback/upload
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+#Content-Type: multipart/form-data
+#
+
+
+#### 上传反馈图片（IntelliJ HTTP Client 正确写法）
+#POST http://localhost:8080/api/feedback/upload
+#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+#
+#
+#--boundary
+#Content-Disposition: form-data; name="file"; filename="test.png"
+#Content-Type: image/png
+#
+#< D:/SPHAS/SPHAS_03/SPHAS/upload/feedback/test.png
+#--boundary--
+
+
+### 上传反馈图片（显式指定 multipart + boundary）
+POST http://localhost:8080/api/feedback/upload
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.png"
+Content-Type: image/png
+
+< D:/SPHAS/SPHAS_03/SPHAS/upload/feedback/test.png
+--boundary--
 
 
