@@ -3,6 +3,7 @@ package com.sphas.project03.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,12 +13,15 @@ import java.time.LocalDateTime;
  */
 @TableName("health_metric_record")
 public class HealthMetricRecord {
+    /** 记录时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime recordTime;
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
     private Long userId;
-    private LocalDateTime recordTime;
+//    private LocalDateTime recordTime;
 
     private BigDecimal heightCm;
     private BigDecimal weightKg;
@@ -77,5 +81,7 @@ public class HealthMetricRecord {
 
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+
 }
 
