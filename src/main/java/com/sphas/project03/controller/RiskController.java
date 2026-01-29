@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import com.sphas.project03.controller.dto.RiskDashboardDTO;
+import com.sphas.project03.service.RiskDashboardService;
 
 /**
  * 健康风险预警（规则引擎版）
@@ -21,12 +23,27 @@ public class RiskController extends BaseController {
 
     private final RiskService riskService;
     private final HealthRiskAlertService alertService;
+    private final RiskDashboardService dashboardService;
 
     public RiskController(RiskService riskService,
-                          HealthRiskAlertService alertService) {
+                          HealthRiskAlertService alertService,
+                          RiskDashboardService dashboardService) {
         this.riskService = riskService;
         this.alertService = alertService;
+        this.dashboardService = dashboardService;
     }
+    /**
+     * 风险看板（近N天统计）
+     * GET /api/risk/dashboard?days=30
+     */
+    @GetMapping("/dashboard")
+    public R<RiskDashboardDTO> dashboard(@RequestParam(defaultValue = "30") int days,
+                                         HttpServletRequest request) {
+        Long userId = getUserId(request);
+        if (userId == null) throw new BizException("未登录");
+        return R.ok(dashboardService.dashboard(userId, days));
+    }
+
 
     /**
      * 立即评估一次并保存（用户主动点击“生成预警”）

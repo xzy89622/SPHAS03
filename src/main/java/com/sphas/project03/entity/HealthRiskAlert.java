@@ -33,6 +33,15 @@ public class HealthRiskAlert {
     private Long sourceRecordId;
 
     private LocalDateTime createTime;
+    /**
+     * AI 风险解读文本
+     */
+    private String aiSummary;
+
+    /**
+     * AI 预测结果（JSON）
+     */
+    private String aiPredictionJson;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -57,5 +66,21 @@ public class HealthRiskAlert {
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    public String getAiSummary() {
+        return aiSummary;
+    }
+
+    public void setAiSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+    }
+
+    public String getAiPredictionJson() {
+        return aiPredictionJson;
+    }
+
+    public void setAiPredictionJson(String aiPredictionJson) {
+        this.aiPredictionJson = aiPredictionJson;
+    }
+
 }
 

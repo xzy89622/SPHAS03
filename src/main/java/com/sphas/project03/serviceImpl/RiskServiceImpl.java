@@ -14,6 +14,9 @@ import com.sphas.project03.service.NoticeService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import com.sphas.project03.service.AiInsightService;
+import com.sphas.project03.dto.AiPredictionDTO;
+import com.sphas.project03.dto.AiPredictionDTO;
 
 /**
  * 风险评估（规则引擎版）
@@ -27,14 +30,18 @@ public class RiskServiceImpl implements RiskService {
     private final NoticeService noticeService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AiInsightService aiInsightService;
 
     public RiskServiceImpl(HealthMetricRecordService metricService,
                            HealthRiskAlertService alertService,
-                           NoticeService noticeService) {
+                           NoticeService noticeService,
+                           AiInsightService aiInsightService) {
         this.metricService = metricService;
         this.alertService = alertService;
         this.noticeService = noticeService;
+        this.aiInsightService = aiInsightService;
     }
+
 
     @Override
     public Map<String, Object> evaluateAndSave(Long userId) {
@@ -196,21 +203,48 @@ public class RiskServiceImpl implements RiskService {
 //        // 建议拼接（去重）
 //        String advice = String.join("；", new LinkedHashSet<>(adviceList));
 //        if (advice.trim().isEmpty()) advice = "整体风险较低，建议保持良好饮食、运动与作息习惯";
+        // ===================== AI 解读 + 预测（生成） =====================
+// 1) AI 解读（自然语言总结）
+        String aiSummary = aiInsightService.buildSummary(level, score, reasons, advice);
 
-        // 3) 落库
+// 2) AI 预测（DTO） -> 转成 JSON 字符串，方便落库
+        AiPredictionDTO aiPrediction = aiInsightService.predict7Days(userId, score);
+        String aiPredictionJson;
+        try {
+            aiPredictionJson = objectMapper.writeValueAsString(aiPrediction);
+        } catch (Exception e) {
+            // 兜底：不因为 AI JSON 序列化失败影响主流程
+            aiPredictionJson = null;
+        }
+
+// ===================== 落库：health_risk_alert =====================
         try {
             HealthRiskAlert alert = new HealthRiskAlert();
             alert.setUserId(userId);
             alert.setRiskLevel(level);
             alert.setRiskScore(score);
+
+            // 触发原因列表（JSON）
             alert.setReasonsJson(objectMapper.writeValueAsString(reasons));
+
+            // 建议（规则/AI拼接后的建议字符串）
             alert.setAdvice(advice);
+
+            // 关联来源记录
             alert.setSourceRecordId(latest.getId());
+
+            // ✅ 新增：AI字段落库
+            alert.setAiSummary(aiSummary);
+            alert.setAiPredictionJson(aiPredictionJson);
+
+            // 创建时间
             alert.setCreateTime(LocalDateTime.now());
+
             alertService.save(alert);
         } catch (Exception ignore) {
-            // 记录失败不影响返回（毕设场景够用）
+            // 不影响主接口返回
         }
+
 
         // 4) 返回给前端
         Map<String, Object> res = new HashMap<>();
@@ -219,6 +253,13 @@ public class RiskServiceImpl implements RiskService {
         res.put("reasons", reasons);
         res.put("advice", advice);
         res.put("latestRecordId", latest.getId());
+
+// ====== AI 解读 + 预测 ======
+        res.put("aiSummary", aiSummary);
+        res.put("aiPrediction", aiPrediction);
+
         return res;
+
+
     }
 }
