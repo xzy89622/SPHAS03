@@ -6,6 +6,7 @@ import com.sphas.project03.controller.dto.RegisterDTO;
 import com.sphas.project03.service.AuthService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.sphas.project03.controller.dto.BootstrapAdminDTO;
 
 import javax.validation.Valid;
 
@@ -34,5 +35,11 @@ public class AuthController {
         String token = authService.login(dto.getUsername(), dto.getPassword());
         return R.ok(token); // 返回JWT
     }
+    @PostMapping("/bootstrap-admin")
+    public R<Long> bootstrapAdmin(@RequestBody @Valid BootstrapAdminDTO dto) {
+        Long id = authService.bootstrapAdmin(dto.getUsername(), dto.getPassword(), dto.getNickname(), dto.getInitKey());
+        return R.ok(id);
+    }
+
 }
 

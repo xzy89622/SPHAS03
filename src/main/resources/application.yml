@@ -30,4 +30,6 @@ jwt:
   secret: "project03_jwt_secret_key_32_bytes_minimum"
   expireMinutes: 10080
 
+app:
+  adminInitKey: "SPHAS03_INIT_ADMIN_2026"   # 你可以改成更复杂的，别泄露
 
