@@ -32,18 +32,21 @@ public class RiskController extends BaseController {
         this.alertService = alertService;
         this.dashboardService = dashboardService;
     }
+
     /**
-     * 风险看板（近N天统计）
-     * GET /api/risk/dashboard?days=30
+     * 风险看板（旧接口，保留兼容）
+     * GET /api/risk/dashboard/legacy?days=30
      */
-    @GetMapping("/dashboard")
-    public R<RiskDashboardDTO> dashboard(@RequestParam(defaultValue = "30") int days,
-                                         HttpServletRequest request) {
+    @GetMapping("/dashboard/legacy")
+    public R<RiskDashboardDTO> dashboardLegacy(@RequestParam(defaultValue = "30") int days,
+                                               HttpServletRequest request) {
         Long userId = getUserId(request);
         if (userId == null) throw new BizException("未登录");
-        return R.ok(dashboardService.dashboard(userId, days));
-    }
 
+        // ✅ 真正调用风险看板 Service
+        RiskDashboardDTO dto = dashboardService.dashboard(userId, days);
+        return R.ok(dto);
+    }
 
     /**
      * 立即评估一次并保存（用户主动点击“生成预警”）
@@ -57,6 +60,7 @@ public class RiskController extends BaseController {
 
     /**
      * 预警历史（最近N条）
+     * GET /api/risk/history?limit=20
      */
     @GetMapping("/history")
     public R<List<HealthRiskAlert>> history(@RequestParam(defaultValue = "20") int limit,
@@ -64,14 +68,18 @@ public class RiskController extends BaseController {
         Long userId = getUserId(request);
         if (userId == null) throw new BizException("未登录");
 
+        // limit 合法性保护
         if (limit <= 0 || limit > 100) limit = 20;
 
+        // 按时间倒序取最近N条
         List<HealthRiskAlert> list = alertService.list(
                 new LambdaQueryWrapper<HealthRiskAlert>()
                         .eq(HealthRiskAlert::getUserId, userId)
                         .orderByDesc(HealthRiskAlert::getCreateTime)
                         .last("limit " + limit)
         );
+
         return R.ok(list);
     }
 }
+

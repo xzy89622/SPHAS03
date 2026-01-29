@@ -105,21 +105,26 @@ public class RiskDashboardServiceImpl implements RiskDashboardService {
         }
 
         // 填入聚合结果
+        // 把真实查询结果合并回 dayMap
         for (Map<String, Object> row : dailyRows) {
-            String d = String.valueOf(row.get("d"));
-            String level = String.valueOf(row.get("riskLevel"));
-            long cnt = Long.parseLong(String.valueOf(row.get("cnt")));
+            // 这里的 key 必须和 select 里的 as 别名一致
+            String d = String.valueOf(row.get("d"));              // 例如 2026-01-29
+            String level = String.valueOf(row.get("riskLevel"));  // LOW/MID/HIGH
+            Long cnt = Long.parseLong(String.valueOf(row.get("cnt")));
 
             Map<String, Object> one = dayMap.get(d);
             if (one == null) continue;
 
+            // 写入当前等级数量
             one.put(level, cnt);
 
+            // 重新计算 total
             long low = Long.parseLong(String.valueOf(one.get("LOW")));
             long mid = Long.parseLong(String.valueOf(one.get("MID")));
             long high = Long.parseLong(String.valueOf(one.get("HIGH")));
             one.put("total", low + mid + high);
         }
+
 
         List<Map<String, Object>> daily = new ArrayList<>(dayMap.values());
 
@@ -160,6 +165,7 @@ public class RiskDashboardServiceImpl implements RiskDashboardService {
 
         // ✅ 新增：AI 看板总结
         dto.setAiConclusion(aiConclusion);
+        dto.setLatestHighTime(latestHighTime);
 
         return dto;
     }
