@@ -8,3 +8,4 @@ import com.sphas.project03.entity.Notice;
  */
 public interface NoticeService extends IService<Notice> {
 }
+
