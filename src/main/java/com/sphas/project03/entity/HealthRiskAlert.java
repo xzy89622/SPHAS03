@@ -25,7 +25,17 @@ public class HealthRiskAlert {
 
     /** 触发原因 JSON（例如：["血压偏高","BMI超重","血糖升高趋势"]） */
     private String reasonsJson;
+    /**
+     * 模拟区块Hash（数据指纹）
+     * 对应数据库列：block_hash
+     */
+    private String blockHash;
 
+    /**
+     * 上一区块Hash（链式校验）
+     * 对应数据库列：prev_hash
+     */
+    private String prevHash;
     /** 建议（展示给用户） */
     private String advice;
 
