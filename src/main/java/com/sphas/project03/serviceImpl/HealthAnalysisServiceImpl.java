@@ -5,7 +5,15 @@ import com.sphas.project03.entity.HealthRecord;
 import com.sphas.project03.service.HealthAnalysisService;
 import com.sphas.project03.service.HealthRecordService;
 import org.springframework.stereotype.Service;
+import com.sphas.project03.controller.dto.HealthAnalysisDTO;
+// 【新增】引入常量类，确保判定标准全系统统一
+import com.sphas.project03.common.HealthConstants;
+import com.sphas.project03.entity.HealthRecord;
+import com.sphas.project03.service.HealthAnalysisService;
+import com.sphas.project03.service.HealthRecordService;
+import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.List;
 
 /**
@@ -40,14 +48,19 @@ public class HealthAnalysisServiceImpl implements HealthAnalysisService {
             dto.setBmiLevel(bmiLevel(bmi));
         }
 
+
         // ===== 血压 =====
         if (latest.getSystolic() != null && latest.getDiastolic() != null) {
             int s = latest.getSystolic();
             int d = latest.getDiastolic();
-            if (s < 130 && d < 85) {
+
+            // 【修改】使用统一常量判断，保持与风险预警模块一致
+            // 如果收缩压 < 130 且 舒张压 < 85，暂由判定为正常（非高风险）
+            if (s < HealthConstants.BP_SYS_MID && d < HealthConstants.BP_DIA_MID) {
                 dto.setBloodPressure("正常");
                 dto.setBloodPressureRisk(false);
             } else {
+                // 否则提示偏高
                 dto.setBloodPressure("偏高");
                 dto.setBloodPressureRisk(true);
             }

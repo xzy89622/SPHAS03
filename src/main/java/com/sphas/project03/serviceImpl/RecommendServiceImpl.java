@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+// 【新增】引入日志工具，方便排查推荐失败的问题
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 推荐服务实现（规则引擎版）
@@ -18,6 +21,7 @@ import java.util.Map;
 @Service
 public class RecommendServiceImpl implements RecommendService {
 
+    private static final Logger log = LoggerFactory.getLogger(RecommendServiceImpl.class);
     private final HealthMetricRecordService metricService;
     private final BmiStandardService bmiStandardService;
     private final DietPlanService dietPlanService;
@@ -104,14 +108,18 @@ public class RecommendServiceImpl implements RecommendService {
             rec.setUserId(userId);
             rec.setBmi(latest.getBmi());
             rec.setBmiLevel(bmiLevel);
+            // 记录各项得分详情
             rec.setScoresJson(objectMapper.writeValueAsString(scores));
             rec.setDietPlanId(diet == null ? null : diet.getId());
             rec.setSportPlanId(sport == null ? null : sport.getId());
             rec.setReason(reason);
             rec.setCreateTime(LocalDateTime.now());
+
             userRecommendationMapper.insert(rec);
-        } catch (Exception ignore) {
-            // 落库失败不影响返回
+        } catch (Exception e) {
+            // 【修改】捕获异常并打印日志，而不是直接忽略
+            // 这样如果落库失败（如字段超长），控制台能看到报错，但不会阻断给前端返回结果
+            log.error("用户 {} 每日推荐方案落库失败", userId, e);
         }
 
         Map<String, Object> res = new HashMap<>();

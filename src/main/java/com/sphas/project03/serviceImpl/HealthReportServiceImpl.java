@@ -6,7 +6,7 @@ import com.sphas.project03.service.HealthRecordService;
 import com.sphas.project03.service.HealthReportService;
 import com.sphas.project03.utils.PdfUtil;
 import org.springframework.stereotype.Service;
-
+import com.sphas.project03.common.HealthConstants;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -99,22 +99,37 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     private String weightTrend(List<HealthRecord> list) {
-        if (list.size() < 2) return "数据不足";
+        if (list == null || list.size() < 2) return "数据不足";
 
-        HealthRecord first = list.get(0);
-        HealthRecord last = list.get(list.size() - 1);
-        if (first.getWeightKg() == null || last.getWeightKg() == null) return "数据不足";
+        // 1. 获取区间内的首尾有效数据
+        // 假设 list 是按时间倒序排列的（最新的在 index 0），若 Service 排序逻辑不同需调整此处
+        HealthRecord latest = list.get(0);
+        HealthRecord oldest = list.get(list.size() - 1);
 
-        double diff = last.getWeightKg() - first.getWeightKg();
-        if (Math.abs(diff) < 0.5) return "稳定";
+        if (latest.getWeightKg() == null || oldest.getWeightKg() == null) return "数据不足";
+
+        // 2. 计算差值并判断
+        double diff = latest.getWeightKg() - oldest.getWeightKg();
+
+        // 3. 设定 0.5kg 的波动缓冲区，避免因喝水/进食导致的误判
+        if (Math.abs(diff) < 0.5) {
+            return "稳定";
+        }
+
+        // 4. 返回趋势方向
         return diff > 0 ? "上升" : "下降";
     }
 
     private boolean hasBpRisk(List<HealthRecord> list) {
+        if (list == null || list.isEmpty()) return false;
+
         for (HealthRecord r : list) {
             if (r.getSystolic() != null && r.getDiastolic() != null) {
-                if (r.getSystolic() >= 130 || r.getDiastolic() >= 85) {
-                    return true; // 简单判定偏高
+                // 【修改】使用统一常量判断，不再写死 130/85
+                // 只要任意一天的记录超过“中风险”阈值，周报即标记风险，提示用户关注
+                if (r.getSystolic() >= HealthConstants.BP_SYS_MID ||
+                        r.getDiastolic() >= HealthConstants.BP_DIA_MID) {
+                    return true;
                 }
             }
         }

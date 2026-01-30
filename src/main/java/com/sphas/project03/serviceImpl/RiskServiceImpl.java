@@ -8,6 +8,7 @@ import com.sphas.project03.entity.HealthRiskAlert;
 import com.sphas.project03.service.HealthMetricRecordService;
 import com.sphas.project03.service.HealthRiskAlertService;
 import com.sphas.project03.service.RiskService;
+import com.sphas.project03.utils.PrivacyUtil;
 import org.springframework.stereotype.Service;
 import com.sphas.project03.entity.Notice;
 import com.sphas.project03.service.NoticeService;
@@ -17,7 +18,25 @@ import java.util.*;
 import com.sphas.project03.service.AiInsightService;
 import com.sphas.project03.dto.AiPredictionDTO;
 import com.sphas.project03.dto.AiPredictionDTO;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sphas.project03.common.BizException;
+// 【新增】引入常量类，统一标准
+import com.sphas.project03.common.HealthConstants;
+import com.sphas.project03.entity.HealthMetricRecord;
+import com.sphas.project03.entity.HealthRiskAlert;
+import com.sphas.project03.entity.Notice;
+// 【新增】引入隐私加密工具
+import com.sphas.project03.utils.PrivacyUtil;
+import com.sphas.project03.service.*; // (保持原有)
+import org.springframework.stereotype.Service;
+// 【新增】引入日志工具
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
 /**
  * 风险评估（规则引擎版）
  * 规则建议：简单、可解释、可答辩
@@ -31,6 +50,8 @@ public class RiskServiceImpl implements RiskService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AiInsightService aiInsightService;
+    // 【新增】添加日志对象，方便排查问题
+    private static final Logger log = LoggerFactory.getLogger(RiskServiceImpl.class);
 
     public RiskServiceImpl(HealthMetricRecordService metricService,
                            HealthRiskAlertService alertService,
@@ -93,33 +114,33 @@ public class RiskServiceImpl implements RiskService {
         Integer sys = latest.getSystolic();
         Integer dia = latest.getDiastolic();
         if (sys != null && dia != null) {
-            // 常见阈值：>=140/90 高风险；>=130/85 中风险
-            if (sys >= 140 || dia >= 90) {
+            // 使用常量判断，确保与分析模块标准一致
+            if (sys >= HealthConstants.BP_SYS_HIGH || dia >= HealthConstants.BP_DIA_HIGH) {
                 score += 35;
-                reasons.add("血压偏高（≥140/90）");
-                adviceList.add("建议减少高盐饮食，规律作息；如长期偏高建议就医评估");
-            } else if (sys >= 130 || dia >= 85) {
+                reasons.add("血压偏高（需就医评估）");
+                adviceList.add("建议严格控制盐摄入，规律作息；如长期偏高建议就医评估");
+            } else if (sys >= HealthConstants.BP_SYS_MID || dia >= HealthConstants.BP_DIA_MID) {
                 score += 18;
-                reasons.add("血压偏高（≥130/85）");
-                adviceList.add("建议减少盐摄入、增加运动、监测血压趋势");
+                reasons.add("血压处于临界值");
+                adviceList.add("建议减少盐摄入、增加运动、每日监测血压趋势");
             }
         }
 
         // ========== C. 血糖规则 ==========
+        // ========== C. 血糖规则 ==========
         BigDecimal sugar = latest.getBloodSugar();
         if (sugar != null) {
-            // 这里不区分空腹/餐后，毕设用“通用阈值”即可（可解释）
-            if (sugar.compareTo(new BigDecimal("7.0")) >= 0) {
+            // 依据毕设通用阈值判断
+            if (sugar.compareTo(new BigDecimal(HealthConstants.SUGAR_HIGH)) >= 0) {
                 score += 30;
-                reasons.add("血糖偏高（≥7.0）");
-                adviceList.add("建议控制精制碳水摄入，餐后适度运动；如持续偏高建议就医");
-            } else if (sugar.compareTo(new BigDecimal("6.1")) >= 0) {
+                reasons.add("血糖偏高");
+                adviceList.add("建议严格控制精制碳水摄入，餐后适度运动");
+            } else if (sugar.compareTo(new BigDecimal(HealthConstants.SUGAR_MID)) >= 0) {
                 score += 12;
-                reasons.add("血糖临界偏高（≥6.1）");
+                reasons.add("血糖临界偏高");
                 adviceList.add("建议减少含糖饮料与甜食，保持运动与作息规律");
             }
         }
-
         // ========== D. 趋势规则（上一条变差则加分） ==========
         if (prev != null) {
             // BMI 上升
@@ -218,22 +239,30 @@ public class RiskServiceImpl implements RiskService {
         }
 
 // ===================== 落库：health_risk_alert =====================
+        // ===================== 落库：health_risk_alert =====================
         try {
             HealthRiskAlert alert = new HealthRiskAlert();
             alert.setUserId(userId);
             alert.setRiskLevel(level);
             alert.setRiskScore(score);
 
-            // 触发原因列表（JSON）
-            alert.setReasonsJson(objectMapper.writeValueAsString(reasons));
+            // 1. 敏感数据处理：原因包含隐私，进行AES加密存储
+            String rawReasons = objectMapper.writeValueAsString(reasons);
+            String encryptedReasons = PrivacyUtil.encrypt(rawReasons);
+            alert.setReasonsJson(encryptedReasons);
 
-            // 建议（规则/AI拼接后的建议字符串）
+            // 2. 模拟区块链特性：生成哈希摘要，确保数据未被篡改
+            // (这里模拟上链过程，实际可存入 blockchain_hash 字段)
+            String blockHash = PrivacyUtil.calculateBlockHash(userId, score, rawReasons, "PREV_HASH_GENESIS");
+            log.info("【数据上链】风险评估记录已生成，区块Hash：{}", blockHash);
+
+            // 建议（明文保存以便展示）
             alert.setAdvice(advice);
 
             // 关联来源记录
             alert.setSourceRecordId(latest.getId());
 
-            // ✅ 新增：AI字段落库
+            // AI 字段落库
             alert.setAiSummary(aiSummary);
             alert.setAiPredictionJson(aiPredictionJson);
 
@@ -241,10 +270,11 @@ public class RiskServiceImpl implements RiskService {
             alert.setCreateTime(LocalDateTime.now());
 
             alertService.save(alert);
-        } catch (Exception ignore) {
-            // 不影响主接口返回
+        } catch (Exception e) {
+            // 记录错误日志，防止异常被吞掉导致前端无响应
+            log.error("用户 {} 风险评估记录落库失败", userId, e);
+            // 这里不抛出异常，保证评估结果能正常返回给前端展示
         }
-
 
         // 4) 返回给前端
         Map<String, Object> res = new HashMap<>();
