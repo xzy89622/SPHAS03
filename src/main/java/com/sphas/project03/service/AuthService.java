@@ -11,5 +11,5 @@ public interface AuthService {
     // ✅ 管理员创建更多管理员（需要ADMIN权限，Controller里校验）
     Long createAdmin(String username, String password, String nickname);
 }
-
+//xiugaichenggong
 
