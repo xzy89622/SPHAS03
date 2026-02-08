@@ -12,6 +12,14 @@ spring:
       enabled: true
       max-file-size: 10MB
       max-request-size: 10MB
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  security:
+    user:
+      name: disabled
+    password: disabled
+
 
   redis:
     host: localhost # Redis地址
@@ -32,4 +40,3 @@ jwt:
 
 app:
   adminInitKey: "SPHAS03_INIT_ADMIN_2026"   # 你可以改成更复杂的，别泄露
-

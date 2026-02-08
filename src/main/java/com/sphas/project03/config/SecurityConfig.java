@@ -4,13 +4,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
- * ✅ 一体化 8080 的 Security 配置
- * 关键目标：
- * 1. 放行前端页面 /
- * 2. 放行静态资源 /assets/**
- * 3. 放行登录接口 /api/auth/**
+ * ✅ 一体化 8080 的 Security 配置（兼容你当前项目版本）
+ * 放行：前端页面 + 静态资源 + 登录接口
  */
 @Configuration
 public class SecurityConfig {
@@ -19,27 +17,26 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // 前后端一体化，一般关闭 csrf
+                // 关闭 csrf（前后端分离/一体化常用）
                 .csrf(csrf -> csrf.disable())
 
                 // 不使用默认登录页
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
 
-                // ✅ 关键：使用 authorizeHttpRequests（不是 authorizeRequests）
                 .authorizeHttpRequests(auth -> auth
-                        // 前端页面 & 静态资源必须放行
+                        // ✅ 放行前端页面与静态资源
                         .requestMatchers(
-                                "/",
-                                "/index.html",
-                                "/assets/**",
-                                "/favicon.ico"
+                                new AntPathRequestMatcher("/"),
+                                new AntPathRequestMatcher("/index.html"),
+                                new AntPathRequestMatcher("/assets/**"),
+                                new AntPathRequestMatcher("/favicon.ico")
                         ).permitAll()
 
-                        // 登录接口
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // ✅ 放行登录/注册接口
+                        .requestMatchers(new AntPathRequestMatcher("/api/auth/**")).permitAll()
 
-                        // 其他接口：你如果用 JWT 拦截器，这里可以先放行
+                        // 其他接口：你如果 JWT 在拦截器里做，这里可以先放行
                         .anyRequest().permitAll()
                 );
 
