@@ -327,6 +327,58 @@ public class FeedbackController {
         boolean ok = feedbackReplyService.save(reply);
         return R.ok(ok);
     }
+    /**
+     * 管理端：反馈列表（仅管理员）
+     * GET /api/feedback/admin/list
+     */
+    @GetMapping("/admin/list")
+    public R<List<Feedback>> adminList(HttpServletRequest request) {
+        String role = getRoleFromRequest(request);
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            return R.fail("仅管理员可查看");
+        }
+
+        List<Feedback> list = feedbackService.list(
+                new QueryWrapper<Feedback>()
+                        .orderByDesc("create_time")
+        );
+        return R.ok(list);
+    }
+
+    /**
+     * 管理端：反馈详情（仅管理员，含附件+回复）
+     * GET /api/feedback/admin/detail?id=123
+     */
+    @GetMapping("/admin/detail")
+    public R<FeedbackDetailDTO> adminDetail(@RequestParam("id") Long id, HttpServletRequest request) {
+        String role = getRoleFromRequest(request);
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            return R.fail("仅管理员可查看");
+        }
+
+        Feedback feedback = feedbackService.getById(id);
+        if (feedback == null) return R.fail("反馈不存在");
+
+        List<FileAttachment> attachments = fileAttachmentService.list(
+                new QueryWrapper<FileAttachment>()
+                        .eq("biz_type", "FEEDBACK")
+                        .eq("biz_id", id)
+                        .orderByAsc("id")
+        );
+
+        List<FeedbackReply> replies = feedbackReplyService.list(
+                new QueryWrapper<FeedbackReply>()
+                        .eq("feedback_id", id)
+                        .orderByAsc("create_time")
+        );
+
+        FeedbackDetailDTO dto = new FeedbackDetailDTO();
+        dto.setFeedback(feedback);
+        dto.setAttachments(attachments);
+        dto.setReplies(replies);
+        return R.ok(dto);
+    }
+
 
 }
 
