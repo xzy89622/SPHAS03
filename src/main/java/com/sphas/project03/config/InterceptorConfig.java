@@ -6,7 +6,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * 拦截器配置：注册 JWT 拦截器
+ * 拦截器注册：对 /api/** 做 JWT 校验，但放行 /api/auth/**
  */
 @Configuration
 public class InterceptorConfig implements WebMvcConfigurer {
@@ -16,10 +16,12 @@ public class InterceptorConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-
         registry.addInterceptor(jwtInterceptor)
-                .addPathPatterns("/api/**")          // 拦截所有 /api 接口
-                .excludePathPatterns("/api/auth/**") // 放行登录/注册
-                .excludePathPatterns("/ping");       // 放行测试接口
+                // ✅ 拦截所有 api
+                .addPathPatterns("/api/**")
+                // ✅ 放行登录/注册接口
+                .excludePathPatterns("/api/auth/**")
+                // ✅ 可选：放行错误页
+                .excludePathPatterns("/error");
     }
 }

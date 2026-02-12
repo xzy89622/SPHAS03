@@ -8,10 +8,6 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 
-/**
- * ✅ 全局 CORS 配置
- * 允许前端(http://localhost:5174) 跨域访问后端(http://localhost:8080)
- */
 @Configuration
 public class CorsConfig {
 
@@ -19,28 +15,24 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 1️⃣ 允许的前端来源（开发环境）
-        config.setAllowedOrigins(
-                Arrays.asList("http://localhost:5175")
-        );
+        // ✅ 允许本机所有端口（解决你 5173/5174/5175 变动导致的 403）
+        // Spring Boot 2.7 支持 allowedOriginPatterns
+        config.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+        ));
 
-        // 2️⃣ 是否允许携带 cookie（JWT 放 header 也可以 true）
+        // 你这里用 JWT 放 Header，不依赖 Cookie，其实可以 false
+        // 为了兼容性，这里保持 true 也可以
         config.setAllowCredentials(true);
 
-        // 3️⃣ 允许的请求头（Authorization 非常关键）
-        config.setAllowedHeaders(
-                Arrays.asList("*")
-        );
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
 
-        // 4️⃣ 允许的请求方法（OPTIONS 一定要有）
-        config.setAllowedMethods(
-                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        );
+        // 如需前端读取 Authorization 等响应头
+        config.setExposedHeaders(Arrays.asList("Authorization"));
 
-        // 5️⃣ 允许前端读取的响应头
-        config.setExposedHeaders(
-                Arrays.asList("Authorization")
-        );
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
