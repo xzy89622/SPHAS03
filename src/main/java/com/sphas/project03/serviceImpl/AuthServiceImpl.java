@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 登录注册业务
@@ -114,9 +115,7 @@ public class AuthServiceImpl implements AuthService {
         sysUserMapper.insert(u);
         return u.getId();
     }
-
-    @Override
-    public Long createAdmin(String username, String password, String nickname) {
+    public Long createAdmin(String username, String password, String nickname, String phone) {
 
         // 1) 用户名查重
         SysUser exist = sysUserMapper.selectOne(
@@ -132,12 +131,33 @@ public class AuthServiceImpl implements AuthService {
         u.setPassword(PasswordUtil.encode(password));
         u.setRole("ADMIN");
         u.setNickname(nickname);
+
+        // ✅ 新增：写入 phone（可选）
+        if (phone != null) {
+            String p = phone.trim();
+            if (!p.isEmpty()) {
+                u.setPhone(p);
+            }
+        }
+
         u.setStatus(1);
         u.setCreateTime(LocalDateTime.now());
         u.setUpdateTime(LocalDateTime.now());
 
         sysUserMapper.insert(u);
         return u.getId();
+    }
+
+    @Override
+    public List<SysUser> recentAdmins(Integer limit) {
+        int n = (limit == null || limit <= 0) ? 10 : Math.min(limit, 50);
+
+        return sysUserMapper.selectList(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getRole, "ADMIN")
+                        .orderByDesc(SysUser::getCreateTime)
+                        .last("limit " + n)
+        );
     }
 
 }

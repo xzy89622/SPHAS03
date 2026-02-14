@@ -378,6 +378,50 @@ public class FeedbackController {
         dto.setReplies(replies);
         return R.ok(dto);
     }
+    /**
+     * 管理端：关闭反馈（标记为已处理）
+     * POST /api/feedback/admin/close?id=123
+     */
+    @PostMapping("/admin/close")
+    public R<Boolean> adminClose(@RequestParam("id") Long id, HttpServletRequest request) {
+
+        // 0) 仅管理员可操作
+        String role = getRoleFromRequest(request);
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            return R.fail("仅管理员可操作");
+        }
+
+        // 1) 反馈是否存在
+        Feedback feedback = feedbackService.getById(id);
+        if (feedback == null) {
+            return R.fail("反馈不存在");
+        }
+
+        // 2) 如果已关闭，直接返回 true（幂等）
+        if ("CLOSED".equalsIgnoreCase(feedback.getStatus())) {
+            return R.ok(true);
+        }
+
+        // 3) 更新状态
+        feedback.setStatus("CLOSED");
+        feedback.setUpdateTime(LocalDateTime.now());
+        boolean ok = feedbackService.updateById(feedback);
+
+        // 4) 可选：写一条“系统/管理员操作记录”到回复表，便于时间线展示
+        if (ok) {
+            Long adminId = getUserIdFromRequest(request);
+
+            FeedbackReply reply = new FeedbackReply();
+            reply.setFeedbackId(id);
+            reply.setSenderRole("ADMIN");
+            reply.setSenderId(adminId);
+            reply.setContent("已标记为已处理（关闭反馈）");
+            reply.setCreateTime(LocalDateTime.now());
+            feedbackReplyService.save(reply);
+        }
+
+        return R.ok(ok);
+    }
 
 
 }

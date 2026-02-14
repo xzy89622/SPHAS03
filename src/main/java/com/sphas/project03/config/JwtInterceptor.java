@@ -42,12 +42,21 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
 
         String token = auth.substring(7);
-        Claims claims = JwtUtil.parseToken(token, secret);
 
-        request.setAttribute("userId", claims.getSubject());
-        request.setAttribute("role", claims.get("role"));
+// ✅ 先做格式判断（避免 parse 直接炸）
+        if (token == null || token.trim().isEmpty() || token.split("\\.").length != 3) {
+            throw new BizException("token格式不正确，请重新登录");
+        }
 
-        return true;
+        try {
+            Claims claims = JwtUtil.parseToken(token, secret);
+            request.setAttribute("userId", claims.getSubject());
+            request.setAttribute("role", claims.get("role"));
+            return true;
+        } catch (Exception e) {
+            throw new BizException("token无效或已过期，请重新登录");
+        }
+
     }
 
 }
