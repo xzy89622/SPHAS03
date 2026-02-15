@@ -26,9 +26,10 @@ public class AuthController {
 
     @PostMapping("/register")
     public R<Long> register(@RequestBody @Valid RegisterDTO dto) {
-        Long id = authService.register(dto.getUsername(), dto.getPassword(), dto.getNickname());
-        return R.ok(id); // 返回用户ID
+        Long id = authService.register(dto.getUsername(), dto.getPassword(), dto.getNickname(), dto.getPhone());
+        return R.ok(id);
     }
+
 
     @PostMapping("/login")
     public R<String> login(@RequestBody @Valid LoginDTO dto) {

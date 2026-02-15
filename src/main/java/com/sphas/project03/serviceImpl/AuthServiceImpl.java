@@ -35,9 +35,8 @@ public class AuthServiceImpl implements AuthService {
         this.sysUserMapper = sysUserMapper;
     }
 
-    @Override
-    public Long register(String username, String password, String nickname) {
-        // 查重
+
+    public Long register(String username, String password, String nickname, String phone) {
         SysUser exist = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username)
         );
@@ -47,14 +46,23 @@ public class AuthServiceImpl implements AuthService {
 
         SysUser u = new SysUser();
         u.setUsername(username);
-        u.setPassword(PasswordUtil.encode(password)); // 密码加密
-        u.setRole("USER"); // 默认普通用户
+        u.setPassword(PasswordUtil.encode(password));
+        u.setRole("USER");
         u.setNickname(nickname);
         u.setStatus(1);
+
+        // ✅ 新增：写入 phone（可选）
+        if (phone != null) {
+            String p = phone.trim();
+            if (!p.isEmpty()) {
+                u.setPhone(p);
+            }
+        }
 
         sysUserMapper.insert(u);
         return u.getId();
     }
+
 
     @Override
     public String login(String username, String password) {

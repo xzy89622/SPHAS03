@@ -7,7 +7,8 @@ import java.util.List;
 public interface AuthService {
     List<SysUser> recentAdmins(Integer limit);
 
-    Long register(String username, String password, String nickname);
+    Long register(String username, String password, String nickname, String phone);
+
 
     String login(String username, String password);
     // ✅ 首次初始化管理员（无token，但需要initKey且只能成功一次）
