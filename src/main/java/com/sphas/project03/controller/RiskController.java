@@ -3,16 +3,17 @@ package com.sphas.project03.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sphas.project03.common.BizException;
 import com.sphas.project03.common.R;
+import com.sphas.project03.controller.dto.RiskDashboardDTO;
 import com.sphas.project03.entity.HealthRiskAlert;
 import com.sphas.project03.service.HealthRiskAlertService;
+import com.sphas.project03.service.RiskDashboardService;
 import com.sphas.project03.service.RiskService;
+import com.sphas.project03.utils.PrivacyUtil;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
-import com.sphas.project03.controller.dto.RiskDashboardDTO;
-import com.sphas.project03.service.RiskDashboardService;
 
 /**
  * 健康风险预警（规则引擎版）
@@ -43,7 +44,6 @@ public class RiskController extends BaseController {
         Long userId = getUserId(request);
         if (userId == null) throw new BizException("未登录");
 
-        // ✅ 真正调用风险看板 Service
         RiskDashboardDTO dto = dashboardService.dashboard(userId, days);
         return R.ok(dto);
     }
@@ -79,7 +79,13 @@ public class RiskController extends BaseController {
                         .last("limit " + limit)
         );
 
+        // reasons_json 是加密存储，这里解密后再返回给前端
+        if (list != null) {
+            for (HealthRiskAlert a : list) {
+                a.setReasonsJson(PrivacyUtil.decrypt(a.getReasonsJson()));
+            }
+        }
+
         return R.ok(list);
     }
 }
-

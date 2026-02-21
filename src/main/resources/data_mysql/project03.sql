@@ -11,7 +11,7 @@
  Target Server Version : 50735 (5.7.35)
  File Encoding         : 65001
 
- Date: 18/02/2026 21:32:30
+ Date: 19/02/2026 20:08:39
 */
 
 SET NAMES utf8mb4;
@@ -39,6 +39,50 @@ CREATE TABLE `bmi_standard`  (
 INSERT INTO `bmi_standard` VALUES (3, 24.00, 28.00, '超重', '建议减少高热量摄入，增加有氧运动', 1, '2026-01-29 16:42:42', '2026-01-29 16:42:42');
 INSERT INTO `bmi_standard` VALUES (4, 28.00, 100.00, '肥胖', '建议制定减脂计划并持续监测指标', 1, '2026-01-29 16:42:55', '2026-01-29 16:42:55');
 INSERT INTO `bmi_standard` VALUES (6, 11.00, 23.00, '正常', '哈哈哈哈', 1, '2026-02-13 21:15:05', '2026-02-13 21:15:05');
+
+-- ----------------------------
+-- Table structure for challenge
+-- ----------------------------
+DROP TABLE IF EXISTS `challenge`;
+CREATE TABLE `challenge`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `title` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `target_value` int(11) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `reward_points` int(11) NOT NULL DEFAULT 50,
+  `create_time` datetime NOT NULL,
+  `update_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of challenge
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for challenge_join
+-- ----------------------------
+DROP TABLE IF EXISTS `challenge_join`;
+CREATE TABLE `challenge_join`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `challenge_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `progress_value` int(11) NOT NULL DEFAULT 0,
+  `finished` tinyint(4) NOT NULL DEFAULT 0,
+  `finish_time` datetime NULL DEFAULT NULL,
+  `create_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_ch_user`(`challenge_id`, `user_id`) USING BTREE,
+  INDEX `idx_ch`(`challenge_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of challenge_join
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for community_comment
@@ -197,7 +241,7 @@ CREATE TABLE `health_article`  (
 -- ----------------------------
 -- Records of health_article
 -- ----------------------------
-INSERT INTO `health_article` VALUES (1, '健康饮食小常识', '每天吃什么更健康', 'https://example.com/a.jpg', '少油少盐，多吃蔬菜水果，坚持运动。', 1, NULL, '2026-01-28 14:48:10', 0, '2026-01-28 14:48:09', '2026-01-28 14:48:09');
+INSERT INTO `health_article` VALUES (1, '健康饮食小常识', '每天吃什么更健康', 'https://tse1.mm.bing.net/th/id/OIP.grBwAREgVrW__eBIu2lbzgAAAA?cb=defcachec2&rs=1&pid=ImgDetMain&o=7&rm=3', '少油少盐，多吃蔬菜水果，坚持运动。', 1, NULL, '2026-01-28 14:48:10', 0, '2026-01-28 14:48:09', '2026-02-19 19:08:32');
 
 -- ----------------------------
 -- Table structure for health_metric_record
@@ -336,6 +380,26 @@ CREATE TABLE `notification`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for point_record
+-- ----------------------------
+DROP TABLE IF EXISTS `point_record`;
+CREATE TABLE `point_record`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `points` int(11) NOT NULL,
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `biz_id` bigint(20) NULL DEFAULT NULL,
+  `remark` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of point_record
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for question_bank
 -- ----------------------------
 DROP TABLE IF EXISTS `question_bank`;
@@ -391,6 +455,67 @@ INSERT INTO `question_bank` VALUES (46, 'STRESS', '你是否有足够的休闲�
 INSERT INTO `question_bank` VALUES (47, 'STRESS', '你最近情绪波动是否明显？', '[{\"text\":\"不明显\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"很明显\",\"score\":0}]', 1, '2026-02-14 13:00:15', '2026-02-14 13:00:15');
 
 -- ----------------------------
+-- Table structure for social_comment
+-- ----------------------------
+DROP TABLE IF EXISTS `social_comment`;
+CREATE TABLE `social_comment`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `post_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `nickname` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `create_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_post_time`(`post_id`, `create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of social_comment
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for social_like
+-- ----------------------------
+DROP TABLE IF EXISTS `social_like`;
+CREATE TABLE `social_like`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `post_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `create_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_post_user`(`post_id`, `user_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of social_like
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for social_post
+-- ----------------------------
+DROP TABLE IF EXISTS `social_post`;
+CREATE TABLE `social_post`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `nickname` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `images_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+  `status` tinyint(4) NOT NULL DEFAULT 1,
+  `like_count` int(11) NOT NULL DEFAULT 0,
+  `comment_count` int(11) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL,
+  `update_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_time`(`create_time`) USING BTREE,
+  INDEX `idx_user`(`user_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of social_post
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for sport_plan
 -- ----------------------------
 DROP TABLE IF EXISTS `sport_plan`;
@@ -414,6 +539,29 @@ INSERT INTO `sport_plan` VALUES (2, '超重有氧进阶', '超重', '慢跑/椭�
 INSERT INTO `sport_plan` VALUES (3, '正常保持运动', '正常', '有氧30分钟（每周3次）+ 力量训练20分钟（每周2次）', 'MID', 1, '2026-01-29 17:17:32', '2026-01-29 17:17:32');
 
 -- ----------------------------
+-- Table structure for sys_message
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_message`;
+CREATE TABLE `sys_message`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `biz_id` bigint(20) NULL DEFAULT NULL,
+  `is_read` tinyint(4) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL,
+  `read_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE,
+  INDEX `idx_user_read`(`user_id`, `is_read`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_message
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for sys_user
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user`;
@@ -435,7 +583,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'test01', '$2a$10$AQ/2bk6DzHJI0YEXIM1s4u391b.CbgU6TOCgRbqdrUK.J.Bw9rT1C', 'USER', '小明', NULL, 1, '2026-02-18 21:04:10', '2026-01-26 15:58:45', '2026-01-26 15:58:45');
+INSERT INTO `sys_user` VALUES (1, 'test01', '$2a$10$AQ/2bk6DzHJI0YEXIM1s4u391b.CbgU6TOCgRbqdrUK.J.Bw9rT1C', 'USER', '小明', NULL, 1, '2026-02-19 19:10:01', '2026-01-26 15:58:45', '2026-01-26 15:58:45');
 INSERT INTO `sys_user` VALUES (2, 'admin01', '$2a$10$mOFffAiWHj1T2HSoo8W7CuAaPuH4D5RkJdUD2BwAYjzPXCZFLS0Si', 'USER', NULL, NULL, 1, '2026-01-28 18:44:08', '2026-01-28 18:42:32', '2026-01-28 18:42:32');
 INSERT INTO `sys_user` VALUES (3, 'admin', '$2a$10$yxevWha1ncDej.D6ReAfBeXNZGkPKFTG/5Q.ESbQ5QHYa0.bbBTQS', 'ADMIN', '超级管理员', NULL, 1, '2026-02-14 17:29:46', '2026-01-29 14:53:15', '2026-01-29 14:53:15');
 INSERT INTO `sys_user` VALUES (4, 'admin02', '$2a$10$pCJpuvzsg.MOUDMdXOEMRuYJXL8Wdjr7qt8g6tEMA5tp1AiSb.Aq.', 'ADMIN', '管理员2号', NULL, 1, '2026-01-29 15:47:16', '2026-01-29 15:01:16', '2026-01-29 15:01:16');
@@ -460,6 +608,50 @@ CREATE TABLE `user_like`  (
 
 -- ----------------------------
 -- Records of user_like
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for user_plan
+-- ----------------------------
+DROP TABLE IF EXISTS `user_plan`;
+CREATE TABLE `user_plan`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `diet_plan_id` bigint(20) NULL DEFAULT NULL,
+  `sport_plan_id` bigint(20) NULL DEFAULT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'ACTIVE',
+  `create_time` datetime NOT NULL,
+  `update_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_status`(`user_id`, `status`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_plan
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for user_plan_checkin
+-- ----------------------------
+DROP TABLE IF EXISTS `user_plan_checkin`;
+CREATE TABLE `user_plan_checkin`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_plan_id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `checkin_date` date NOT NULL,
+  `diet_done` tinyint(4) NOT NULL DEFAULT 0,
+  `sport_done` tinyint(4) NOT NULL DEFAULT 0,
+  `remark` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_plan_date`(`user_plan_id`, `checkin_date`) USING BTREE,
+  INDEX `idx_user_date`(`user_id`, `checkin_date`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_plan_checkin
 -- ----------------------------
 
 -- ----------------------------

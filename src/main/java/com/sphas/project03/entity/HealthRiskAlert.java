@@ -23,19 +23,18 @@ public class HealthRiskAlert {
     /** 风险分：0~100 */
     private Integer riskScore;
 
-    /** 触发原因 JSON（例如：["血压偏高","BMI超重","血糖升高趋势"]） */
-    private String reasonsJson;
     /**
-     * 模拟区块Hash（数据指纹）
-     * 对应数据库列：block_hash
+     * 触发原因 JSON
+     * 注意：数据库字段 reasons_json 存的是“加密后的原因JSON”（为了隐私安全）
      */
+    private String reasonsJson;
+
+    /** 模拟区块Hash（数据指纹） */
     private String blockHash;
 
-    /**
-     * 上一区块Hash（链式校验）
-     * 对应数据库列：prev_hash
-     */
+    /** 上一区块Hash（链式校验） */
     private String prevHash;
+
     /** 建议（展示给用户） */
     private String advice;
 
@@ -43,39 +42,97 @@ public class HealthRiskAlert {
     private Long sourceRecordId;
 
     private LocalDateTime createTime;
-    /**
-     * AI 风险解读文本
-     */
+
+    /** AI 风险解读文本 */
     private String aiSummary;
 
-    /**
-     * AI 预测结果（JSON）
-     */
+    /** AI 预测结果（JSON） */
     private String aiPredictionJson;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // =====================
+    // getter / setter
+    // =====================
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getRiskLevel() { return riskLevel; }
-    public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Integer getRiskScore() { return riskScore; }
-    public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
+    public Long getUserId() {
+        return userId;
+    }
 
-    public String getReasonsJson() { return reasonsJson; }
-    public void setReasonsJson(String reasonsJson) { this.reasonsJson = reasonsJson; }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-    public String getAdvice() { return advice; }
-    public void setAdvice(String advice) { this.advice = advice; }
+    public String getRiskLevel() {
+        return riskLevel;
+    }
 
-    public Long getSourceRecordId() { return sourceRecordId; }
-    public void setSourceRecordId(Long sourceRecordId) { this.sourceRecordId = sourceRecordId; }
+    public void setRiskLevel(String riskLevel) {
+        this.riskLevel = riskLevel;
+    }
 
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    public Integer getRiskScore() {
+        return riskScore;
+    }
+
+    public void setRiskScore(Integer riskScore) {
+        this.riskScore = riskScore;
+    }
+
+    public String getReasonsJson() {
+        return reasonsJson;
+    }
+
+    public void setReasonsJson(String reasonsJson) {
+        this.reasonsJson = reasonsJson;
+    }
+
+    public String getBlockHash() {
+        return blockHash;
+    }
+
+    public void setBlockHash(String blockHash) {
+        this.blockHash = blockHash;
+    }
+
+    public String getPrevHash() {
+        return prevHash;
+    }
+
+    public void setPrevHash(String prevHash) {
+        this.prevHash = prevHash;
+    }
+
+    public String getAdvice() {
+        return advice;
+    }
+
+    public void setAdvice(String advice) {
+        this.advice = advice;
+    }
+
+    public Long getSourceRecordId() {
+        return sourceRecordId;
+    }
+
+    public void setSourceRecordId(Long sourceRecordId) {
+        this.sourceRecordId = sourceRecordId;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+
     public String getAiSummary() {
         return aiSummary;
     }
@@ -91,6 +148,4 @@ public class HealthRiskAlert {
     public void setAiPredictionJson(String aiPredictionJson) {
         this.aiPredictionJson = aiPredictionJson;
     }
-
 }
-
