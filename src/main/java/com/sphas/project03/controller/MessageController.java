@@ -70,6 +70,20 @@ public class MessageController extends BaseController {
         return R.ok(true);
     }
 
+    /**
+     * 用户端：消息详情
+     * 说明：小程序点进来需要拿到完整内容，不走分页兜底。
+     */
+    @GetMapping("/detail/{id}")
+    public R<SysMessage> detail(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = getUserId(request);
+        if (userId == null) throw new BizException("未登录");
+
+        SysMessage m = sysMessageService.getById(id);
+        if (m == null || !userId.equals(m.getUserId())) throw new BizException("消息不存在");
+        return R.ok(m);
+    }
+
     /** 用户端：一键已读 */
     @PostMapping("/readAll")
     public R<Boolean> readAll(HttpServletRequest request) {

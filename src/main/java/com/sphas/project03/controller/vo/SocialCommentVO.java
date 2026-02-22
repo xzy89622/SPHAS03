@@ -1,18 +1,20 @@
-package com.sphas.project03.entity;
-
-import com.baomidou.mybatisplus.annotation.TableName;
+package com.sphas.project03.controller.vo;
 
 import java.time.LocalDateTime;
 
 /**
- * 评论
+ * 评论VO（联表返回）
  */
-@TableName("social_comment")
-public class SocialComment {
-
+public class SocialCommentVO {
     private Long id;
     private Long postId;
     private Long userId;
+
+    // sys_user
+    private String nickname;
+    private String avatar;
+
+    // social_comment
     private String content;
     private LocalDateTime createTime;
 
@@ -24,6 +26,12 @@ public class SocialComment {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public String getNickname() { return nickname; }
+    public void setNickname(String nickname) { this.nickname = nickname; }
+
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }

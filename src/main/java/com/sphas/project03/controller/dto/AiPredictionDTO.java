@@ -1,38 +1,87 @@
-package com.sphas.project03.dto;
+package com.sphas.project03.controller.dto;
+
+import java.math.BigDecimal;
 
 /**
- * AI 趋势预测 DTO（给前端展示）
+ * AI预测返回DTO
  */
 public class AiPredictionDTO {
 
-    /** 趋势：UP / DOWN / FLAT */
+    /**
+     * 模型：PYTHON / FALLBACK
+     */
+    private String model;
+
+    /**
+     * 预测天数（例如 7）
+     */
+    private Integer horizonDays;
+
+    /**
+     * 预测风险分（0~100）
+     */
+    private Integer predictedRiskScore;
+
+    /**
+     * 预测体重（kg）
+     */
+    private BigDecimal predictedWeightKg;
+
+    /**
+     * 趋势：UP / DOWN / STABLE
+     */
     private String trend;
 
-    /** 预测 7 天后的分数（0-100） */
-    private Integer predictedScore;
+    /**
+     * 建议
+     */
+    private String suggestion;
 
-    /** 预测 7 天后的等级：LOW / MID / HIGH */
-    private String predictedLevel;
+    public String getModel() {
+        return model;
+    }
 
-    /** 置信度（0~1） */
-    private Double confidence;
+    public void setModel(String model) {
+        this.model = model;
+    }
 
-    /** 一句话提示 */
-    private String message;
+    public Integer getHorizonDays() {
+        return horizonDays;
+    }
 
-    public String getTrend() { return trend; }
-    public void setTrend(String trend) { this.trend = trend; }
+    public void setHorizonDays(Integer horizonDays) {
+        this.horizonDays = horizonDays;
+    }
 
-    public Integer getPredictedScore() { return predictedScore; }
-    public void setPredictedScore(Integer predictedScore) { this.predictedScore = predictedScore; }
+    public Integer getPredictedRiskScore() {
+        return predictedRiskScore;
+    }
 
-    public String getPredictedLevel() { return predictedLevel; }
-    public void setPredictedLevel(String predictedLevel) { this.predictedLevel = predictedLevel; }
+    public void setPredictedRiskScore(Integer predictedRiskScore) {
+        this.predictedRiskScore = predictedRiskScore;
+    }
 
-    public Double getConfidence() { return confidence; }
-    public void setConfidence(Double confidence) { this.confidence = confidence; }
+    public BigDecimal getPredictedWeightKg() {
+        return predictedWeightKg;
+    }
 
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    public void setPredictedWeightKg(BigDecimal predictedWeightKg) {
+        this.predictedWeightKg = predictedWeightKg;
+    }
+
+    public String getTrend() {
+        return trend;
+    }
+
+    public void setTrend(String trend) {
+        this.trend = trend;
+    }
+
+    public String getSuggestion() {
+        return suggestion;
+    }
+
+    public void setSuggestion(String suggestion) {
+        this.suggestion = suggestion;
+    }
 }
-

@@ -4,15 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sphas.project03.common.BizException;
 import com.sphas.project03.common.HealthConstants;
-import com.sphas.project03.dto.AiPredictionDTO;
+import com.sphas.project03.controller.dto.AiPredictionDTO;
 import com.sphas.project03.entity.HealthMetricRecord;
 import com.sphas.project03.entity.HealthRiskAlert;
+import com.sphas.project03.entity.Notice;
 import com.sphas.project03.entity.SysMessage;
-import com.sphas.project03.service.AiInsightService;
-import com.sphas.project03.service.HealthMetricRecordService;
-import com.sphas.project03.service.HealthRiskAlertService;
-import com.sphas.project03.service.RiskService;
-import com.sphas.project03.service.SysMessageService;
+import com.sphas.project03.service.*;
 import com.sphas.project03.utils.PrivacyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +21,7 @@ import java.util.*;
 
 /**
  * 风险评估（规则引擎版）
- * 说明：规则简单可解释，适合答辩；并且把敏感原因加密存储 + 链式Hash模拟“区块链不可篡改”。
+ * 说明：HIGH风险时写入站内消息（同一天只发一次）
  */
 @Service
 public class RiskServiceImpl implements RiskService {
@@ -33,36 +30,37 @@ public class RiskServiceImpl implements RiskService {
 
     private final HealthMetricRecordService metricService;
     private final HealthRiskAlertService alertService;
-    private final SysMessageService sysMessageService;
+    private final NoticeService noticeService;
     private final AiInsightService aiInsightService;
+    private final SysMessageService sysMessageService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RiskServiceImpl(HealthMetricRecordService metricService,
                            HealthRiskAlertService alertService,
-                           SysMessageService sysMessageService,
-                           AiInsightService aiInsightService) {
+                           NoticeService noticeService,
+                           AiInsightService aiInsightService,
+                           SysMessageService sysMessageService) {
         this.metricService = metricService;
         this.alertService = alertService;
-        this.sysMessageService = sysMessageService;
+        this.noticeService = noticeService;
         this.aiInsightService = aiInsightService;
+        this.sysMessageService = sysMessageService;
     }
 
     @Override
     public Map<String, Object> evaluateAndSave(Long userId) {
 
-        // 1) 取最新一条体质记录
+        // 1) 最新体质记录
         HealthMetricRecord latest = metricService.getOne(
                 new LambdaQueryWrapper<HealthMetricRecord>()
                         .eq(HealthMetricRecord::getUserId, userId)
                         .orderByDesc(HealthMetricRecord::getRecordTime)
                         .last("limit 1")
         );
-        if (latest == null) {
-            throw new BizException("暂无体质记录，请先录入体质数据");
-        }
+        if (latest == null) throw new BizException("暂无体质记录，请先录入体质数据");
 
-        // 2) 取上一条（用于趋势风险）
+        // 2) 上一条记录（用于趋势判断）
         HealthMetricRecord prev = metricService.getOne(
                 new LambdaQueryWrapper<HealthMetricRecord>()
                         .eq(HealthMetricRecord::getUserId, userId)
@@ -70,14 +68,13 @@ public class RiskServiceImpl implements RiskService {
                         .last("limit 1,1")
         );
 
-        int score = 0; // 0~100
+        int score = 0;
         List<String> reasons = new ArrayList<>();
         List<String> adviceList = new ArrayList<>();
 
-        // ========== A. BMI 规则 ==========
+        // A. BMI
         if (latest.getBmi() != null) {
             BigDecimal bmi = latest.getBmi();
-
             if (bmi.compareTo(new BigDecimal("28")) >= 0) {
                 score += 35;
                 reasons.add("BMI偏高（肥胖）");
@@ -93,7 +90,7 @@ public class RiskServiceImpl implements RiskService {
             }
         }
 
-        // ========== B. 血压规则 ==========
+        // B. 血压
         Integer sys = latest.getSystolic();
         Integer dia = latest.getDiastolic();
         if (sys != null && dia != null) {
@@ -108,7 +105,7 @@ public class RiskServiceImpl implements RiskService {
             }
         }
 
-        // ========== C. 血糖规则 ==========
+        // C. 血糖
         BigDecimal sugar = latest.getBloodSugar();
         if (sugar != null) {
             if (sugar.compareTo(new BigDecimal(HealthConstants.SUGAR_HIGH)) >= 0) {
@@ -122,7 +119,7 @@ public class RiskServiceImpl implements RiskService {
             }
         }
 
-        // ========== D. 趋势规则 ==========
+        // D. 趋势（变差加分）
         if (prev != null) {
             if (latest.getBmi() != null && prev.getBmi() != null && latest.getBmi().compareTo(prev.getBmi()) > 0) {
                 score += 6;
@@ -142,7 +139,7 @@ public class RiskServiceImpl implements RiskService {
             }
         }
 
-        // ========== E. 生活方式风险 ==========
+        // E. 生活方式
         if (latest.getSleepHours() != null && latest.getSleepHours().compareTo(new BigDecimal("6")) < 0) {
             score += 8;
             reasons.add("睡眠不足（<6小时）");
@@ -154,25 +151,21 @@ public class RiskServiceImpl implements RiskService {
             adviceList.add("建议每天增加步行量，逐步达到≥6000-8000步");
         }
 
-        // 分数封顶
         score = Math.min(score, 100);
 
-        // 风险等级
         String level;
         if (score >= 60) level = "HIGH";
         else if (score >= 30) level = "MID";
         else level = "LOW";
 
-        // 建议（去重）
+        // 建议拼接（去重）
         String advice = String.join("；", new LinkedHashSet<>(adviceList));
-        if (advice.trim().isEmpty()) {
-            advice = "整体健康风险较低，建议保持良好饮食与运动习惯";
-        }
+        if (advice.isEmpty()) advice = "整体健康风险较低，建议保持良好饮食与运动习惯";
 
-        // ===================== AI 解读 + 预测 =====================
+        // AI 解读 + 预测
         String aiSummary = aiInsightService.buildSummary(level, score, reasons, advice);
-        AiPredictionDTO aiPrediction = aiInsightService.predict7Days(userId, score);
 
+        AiPredictionDTO aiPrediction = aiInsightService.predict7Days(userId, score);
         String aiPredictionJson;
         try {
             aiPredictionJson = objectMapper.writeValueAsString(aiPrediction);
@@ -180,12 +173,67 @@ public class RiskServiceImpl implements RiskService {
             aiPredictionJson = null;
         }
 
-        // ===================== 落库：health_risk_alert =====================
-        saveAlert(userId, latest.getId(), level, score, reasons, advice, aiSummary, aiPredictionJson);
+        // ========== 落库 health_risk_alert（含链式hash） ==========
+        HealthRiskAlert last = alertService.getOne(new LambdaQueryWrapper<HealthRiskAlert>()
+                .eq(HealthRiskAlert::getUserId, userId)
+                .orderByDesc(HealthRiskAlert::getCreateTime)
+                .last("limit 1"));
 
-        // ===================== HIGH 风险：实时预警（站内消息）====================
+        String prevHash = (last == null || last.getBlockHash() == null) ? "GENESIS" : last.getBlockHash();
+
+        try {
+            HealthRiskAlert alert = new HealthRiskAlert();
+            alert.setUserId(userId);
+            alert.setRiskLevel(level);
+            alert.setRiskScore(score);
+
+            // 原因加密存储
+            String rawReasons = objectMapper.writeValueAsString(reasons);
+            alert.setReasonsJson(PrivacyUtil.encrypt(rawReasons));
+
+            // 生成区块hash（模拟可追溯）
+            String blockHash = PrivacyUtil.calculateBlockHash(userId, score, rawReasons, prevHash);
+            alert.setPrevHash(prevHash);
+            alert.setBlockHash(blockHash);
+
+            alert.setAdvice(advice);
+            alert.setSourceRecordId(latest.getId());
+            alert.setAiSummary(aiSummary);
+            alert.setAiPredictionJson(aiPredictionJson);
+            alert.setCreateTime(LocalDateTime.now());
+
+            alertService.save(alert);
+        } catch (Exception e) {
+            log.error("用户 {} 风险评估落库失败", userId, e);
+        }
+
+        // ========== HIGH 风险实时预警：写 sys_message（同一天只发一次）==========
         if ("HIGH".equals(level)) {
-            pushHighRiskMessageOncePerDay(userId, reasons, advice);
+            LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+
+            long sent = sysMessageService.count(new LambdaQueryWrapper<SysMessage>()
+                    .eq(SysMessage::getUserId, userId)
+                    .eq(SysMessage::getType, "RISK")
+                    .ge(SysMessage::getCreateTime, todayStart));
+
+            if (sent == 0) {
+                // 1) 写站内消息（小程序端拉取用）
+                SysMessage m = new SysMessage();
+                m.setUserId(userId);
+                m.setType("RISK");
+                m.setTitle("【风险预警】今日检测到较高健康风险");
+                m.setContent("触发原因：" + String.join("、", reasons) + "\n建议：" + advice);
+                m.setIsRead(0);
+                m.setCreateTime(LocalDateTime.now());
+                sysMessageService.save(m);
+
+                // 2) 可选：联动公告（你原本就有）
+                Notice n = new Notice();
+                n.setTitle("【健康风险预警】检测到较高风险，请及时关注");
+                n.setContent("触发原因：" + String.join("、", reasons) + "\n建议：" + advice + "\n（系统自动生成）");
+                n.setStatus(1);
+                noticeService.save(n);
+            }
         }
 
         // 返回给前端
@@ -199,87 +247,5 @@ public class RiskServiceImpl implements RiskService {
         res.put("aiPrediction", aiPrediction);
 
         return res;
-    }
-
-    /**
-     * 保存预警记录（含：原因加密 + 链式Hash）
-     */
-    private void saveAlert(Long userId,
-                           Long sourceRecordId,
-                           String level,
-                           int score,
-                           List<String> reasons,
-                           String advice,
-                           String aiSummary,
-                           String aiPredictionJson) {
-
-        try {
-            // 1) 找到上一条预警，拿到 prevHash（形成链）
-            HealthRiskAlert last = alertService.getOne(
-                    new LambdaQueryWrapper<HealthRiskAlert>()
-                            .eq(HealthRiskAlert::getUserId, userId)
-                            .orderByDesc(HealthRiskAlert::getCreateTime)
-                            .last("limit 1")
-            );
-
-            String prevHash = (last == null || last.getBlockHash() == null || last.getBlockHash().trim().isEmpty())
-                    ? "0000000000000000"
-                    : last.getBlockHash();
-
-            // 2) 原因 JSON -> 加密存储
-            String rawReasons = objectMapper.writeValueAsString(reasons);
-            String encryptedReasons = PrivacyUtil.encrypt(rawReasons);
-
-            // 3) 计算本次 blockHash
-            String blockHash = PrivacyUtil.calculateBlockHash(userId, score, rawReasons, prevHash);
-
-            // 4) 落库
-            HealthRiskAlert alert = new HealthRiskAlert();
-            alert.setUserId(userId);
-            alert.setRiskLevel(level);
-            alert.setRiskScore(score);
-            alert.setPrevHash(prevHash);
-            alert.setBlockHash(blockHash);
-            alert.setReasonsJson(encryptedReasons);
-            alert.setAdvice(advice);
-            alert.setSourceRecordId(sourceRecordId);
-            alert.setAiSummary(aiSummary);
-            alert.setAiPredictionJson(aiPredictionJson);
-            alert.setCreateTime(LocalDateTime.now());
-
-            alertService.save(alert);
-
-            // 打个日志，便于你演示“区块链指纹”
-            log.info("【数据上链】userId={}, prevHash={}, blockHash={}", userId, prevHash, blockHash);
-
-        } catch (Exception e) {
-            log.error("用户 {} 风险评估记录落库失败", userId, e);
-        }
-    }
-
-    /**
-     * HIGH 风险：同一天只发一次站内提醒
-     */
-    private void pushHighRiskMessageOncePerDay(Long userId, List<String> reasons, String advice) {
-
-        LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
-
-        long sent = sysMessageService.count(
-                new LambdaQueryWrapper<SysMessage>()
-                        .eq(SysMessage::getUserId, userId)
-                        .eq(SysMessage::getType, "RISK")
-                        .ge(SysMessage::getCreateTime, todayStart)
-        );
-        if (sent > 0) return;
-
-        SysMessage m = new SysMessage();
-        m.setUserId(userId);
-        m.setType("RISK");
-        m.setTitle("【风险预警】今日检测到较高健康风险");
-        m.setContent("触发原因：" + String.join("、", reasons) + "\n建议：" + advice);
-        m.setIsRead(0);
-        m.setCreateTime(LocalDateTime.now());
-
-        sysMessageService.save(m);
     }
 }

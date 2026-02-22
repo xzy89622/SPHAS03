@@ -1,6 +1,7 @@
 package com.sphas.project03.controller;
 
 import com.sphas.project03.common.R;
+import com.sphas.project03.controller.dto.MonthlyReportDTO;
 import com.sphas.project03.controller.dto.WeeklyReportDTO;
 import com.sphas.project03.service.HealthReportService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,12 @@ public class HealthReportController {
         return R.ok(healthReportService.weekly(userId));
     }
 
+    @GetMapping("/monthly")
+    public R<MonthlyReportDTO> monthly(HttpServletRequest request) {
+        Long userId = Long.valueOf(String.valueOf(request.getAttribute("userId")));
+        return R.ok(healthReportService.monthly(userId));
+    }
+
     @GetMapping("/weekly/pdf")
     public void weeklyPdf(HttpServletRequest request, HttpServletResponse response) throws Exception {
         Long userId = Long.valueOf(String.valueOf(request.getAttribute("userId")));
@@ -38,5 +45,16 @@ public class HealthReportController {
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=weekly-report.pdf");
         response.getOutputStream().write(pdf); // 输出PDF
+    }
+
+    @GetMapping("/monthly/pdf")
+    public void monthlyPdf(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Long userId = Long.valueOf(String.valueOf(request.getAttribute("userId")));
+
+        byte[] pdf = healthReportService.monthlyPdf(userId);
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=monthly-report.pdf");
+        response.getOutputStream().write(pdf);
     }
 }

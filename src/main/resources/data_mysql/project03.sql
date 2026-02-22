@@ -11,11 +11,33 @@
  Target Server Version : 50735 (5.7.35)
  File Encoding         : 65001
 
- Date: 19/02/2026 20:08:39
+ Date: 21/02/2026 21:05:23
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for badge
+-- ----------------------------
+DROP TABLE IF EXISTS `badge`;
+CREATE TABLE `badge`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `code`(`code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of badge
+-- ----------------------------
+INSERT INTO `badge` VALUES (1, 'FIRST_CHALLENGE', '初次挑战', '首次完成挑战获得', '', '2026-02-21 20:28:53');
+INSERT INTO `badge` VALUES (2, 'POINTS_50', '积分达人', '总积分达到50获得', '', '2026-02-21 20:28:53');
+INSERT INTO `badge` VALUES (3, 'POST_3', '社区活跃', '发布3条帖子获得', '', '2026-02-21 20:28:53');
 
 -- ----------------------------
 -- Table structure for bmi_standard
@@ -57,11 +79,14 @@ CREATE TABLE `challenge`  (
   `create_time` datetime NOT NULL,
   `update_time` datetime NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of challenge
 -- ----------------------------
+INSERT INTO `challenge` VALUES (1, '每日步数挑战', '每天步数达到目标，完成后获得积分奖励', 'STEP', 8000, '2026-02-19', '2026-03-05', 1, 50, '2026-02-19 22:47:00', '2026-02-19 22:47:00');
+INSERT INTO `challenge` VALUES (2, '跑步里程挑战', '累计跑步里程达到目标', 'RUN', 20, '2026-02-19', '2026-03-21', 1, 80, '2026-02-19 22:47:00', '2026-02-19 22:47:00');
+INSERT INTO `challenge` VALUES (3, '控糖饮食挑战', '坚持低糖饮食，完成后获得积分奖励', 'DIET', 14, '2026-02-19', '2026-03-05', 1, 60, '2026-02-19 22:47:00', '2026-02-19 22:47:00');
 
 -- ----------------------------
 -- Table structure for challenge_join
@@ -78,11 +103,12 @@ CREATE TABLE `challenge_join`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_ch_user`(`challenge_id`, `user_id`) USING BTREE,
   INDEX `idx_ch`(`challenge_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of challenge_join
 -- ----------------------------
+INSERT INTO `challenge_join` VALUES (1, 1, 1, 8000, 1, '2026-02-19 22:49:18', '2026-02-19 22:48:18');
 
 -- ----------------------------
 -- Table structure for community_comment
@@ -320,7 +346,7 @@ CREATE TABLE `health_risk_alert`  (
   `ai_prediction_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT 'AI预测结果(JSON)',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of health_risk_alert
@@ -330,6 +356,7 @@ INSERT INTO `health_risk_alert` VALUES (2, 1, 'LOW', 18, NULL, '0000000000000000
 INSERT INTO `health_risk_alert` VALUES (3, 1, 'HIGH', 100, NULL, '0000000000000000', '[\"BMI偏高（肥胖）\",\"血压偏高（≥140/90）\",\"血糖偏高（≥7.0）\",\"BMI较上次上升\",\"收缩压较上次上升\",\"舒张压较上次上升\",\"血糖较上次上升\",\"睡眠不足（<6小时）\",\"日均步数偏低（<5000）\"]', '建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议减少高盐饮食，规律作息；如长期偏高建议就医评估；建议控制精制碳水摄入，餐后适度运动；如持续偏高建议就医；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步', 3, '2026-01-29 18:35:05', NULL, NULL);
 INSERT INTO `health_risk_alert` VALUES (4, 1, 'HIGH', 100, NULL, '0000000000000000', '[\"BMI偏高（肥胖）\",\"血压偏高（≥140/90）\",\"血糖偏高（≥7.0）\",\"BMI较上次上升\",\"收缩压较上次上升\",\"舒张压较上次上升\",\"血糖较上次上升\",\"睡眠不足（<6小时）\",\"日均步数偏低（<5000）\"]', '建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议减少高盐饮食，规律作息；如长期偏高建议就医评估；建议控制精制碳水摄入，餐后适度运动；如持续偏高建议就医；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步', 3, '2026-01-29 18:37:48', NULL, NULL);
 INSERT INTO `health_risk_alert` VALUES (5, 1, 'HIGH', 100, NULL, '0000000000000000', '[\"BMI偏高（肥胖）\",\"血压偏高（≥140/90）\",\"血糖偏高（≥7.0）\",\"BMI较上次上升\",\"收缩压较上次上升\",\"舒张压较上次上升\",\"血糖较上次上升\",\"睡眠不足（<6小时）\",\"日均步数偏低（<5000）\"]', '建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议减少高盐饮食，规律作息；如长期偏高建议就医评估；建议控制精制碳水摄入，餐后适度运动；如持续偏高建议就医；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步', 3, '2026-01-29 19:14:12', NULL, NULL);
+INSERT INTO `health_risk_alert` VALUES (6, 1, 'HIGH', 100, 'MRzsaVVSOQ5vWi0+MiULz2N1C4g8S5fRoMtDXOuJWh0=', 'GENESIS', 'EaZPR35OmzKeul8bBM9Kf9t+KjGNceBts0AZmnPxCAFcm6gQIZgprcurFoywR7q43g11zqPnV1PlO4z1FcpA7cuvNy0DsdPgxac3zXRex8Av5E0jw5aBYbgE5765QeHJg2Otz0NoiHOjZwlJtb6kxLY5J2QNRoWybetN6LeU8wPs2UAUURk5TNoGzYUYQ7Heea/eFAAE63peZz/Ml8WRJ4Mkc4qTft3SJB9OqxRR40ASEqrF1pCE1ZyNZBvYm3VoyxU07E2JMUCJL6sITQHr/EOMSmgCBi03N2zTLNr2fRnCv8QhTDAIE2usRcMlP8qA', '建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议严格控制盐摄入，规律作息；如长期偏高建议就医评估；建议严格控制精制碳水摄入，餐后适度运动；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步', 3, '2026-02-21 20:17:56', '根据您最近的健康数据分析，系统判定当前风险等级为 HIGH（100分），总体风险较高。主要异常包括：BMI偏高（肥胖）、血压偏高（需就医评估）、血糖偏高、BMI较上次上升。当前建议：建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议严格控制盐摄入，规律作息；如长期偏高建议就医评估；建议严格控制精制碳水摄入，餐后适度运动；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步。综合提示：建议近期优先处理主要异常指标，并在必要时及时就医评估。', '{\"trend\":\"UP\",\"predictedScore\":100,\"predictedLevel\":\"HIGH\",\"confidence\":0.8,\"message\":\"基于最近 5 次风险评分趋势，未来 7 天风险可能继续上升，请提前干预。\"}');
 
 -- ----------------------------
 -- Table structure for notice
@@ -346,7 +373,7 @@ CREATE TABLE `notice`  (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_notice_status_time`(`status`, `publish_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统公告' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统公告' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of notice
@@ -356,6 +383,7 @@ INSERT INTO `notice` VALUES (2, '【健康风险预警】检测到较高风险�
 INSERT INTO `notice` VALUES (3, '2222', '<p>1111</p>', 1, NULL, NULL, '2026-02-12 16:04:13', '2026-02-13 15:13:05');
 INSERT INTO `notice` VALUES (4, '更新第一次20260212', '11111', 1, NULL, NULL, '2026-02-12 16:21:52', '2026-02-14 14:59:04');
 INSERT INTO `notice` VALUES (5, '新标题1', '<p><s><em><strong>你好</strong></em></s></p>', 1, NULL, NULL, '2026-02-13 15:04:05', '2026-02-13 15:04:05');
+INSERT INTO `notice` VALUES (6, '【健康风险预警】检测到较高风险，请及时关注', '触发原因：BMI偏高（肥胖）、血压偏高（需就医评估）、血糖偏高、BMI较上次上升、收缩压较上次上升、舒张压较上次上升、血糖较上次上升、睡眠不足（<6小时）、日均步数偏低（<5000）\n建议：建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议严格控制盐摄入，规律作息；如长期偏高建议就医评估；建议严格控制精制碳水摄入，餐后适度运动；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步\n（系统自动生成）', 1, NULL, NULL, '2026-02-21 20:17:55', '2026-02-21 20:17:55');
 
 -- ----------------------------
 -- Table structure for notification
@@ -393,11 +421,15 @@ CREATE TABLE `point_record`  (
   `create_time` datetime NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of point_record
 -- ----------------------------
+INSERT INTO `point_record` VALUES (1, 1, 50, 'CHALLENGE_FINISH', 1, '完成挑战：每日步数挑战', '2026-02-19 22:49:18');
+INSERT INTO `point_record` VALUES (2, 1, 5, 'POST_CREATE', 1, '发布日志/帖子', '2026-02-21 19:52:47');
+INSERT INTO `point_record` VALUES (3, 1, 2, 'POST_COMMENT', 1, '评论帖子', '2026-02-21 19:54:49');
+INSERT INTO `point_record` VALUES (4, 1, 1, 'POST_LIKE', 1, '点赞帖子', '2026-02-21 19:55:30');
 
 -- ----------------------------
 -- Table structure for question_bank
@@ -468,11 +500,12 @@ CREATE TABLE `social_comment`  (
   `create_time` datetime NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_post_time`(`post_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of social_comment
 -- ----------------------------
+INSERT INTO `social_comment` VALUES (1, 1, 1, NULL, '加油，坚持！', 1, '2026-02-21 19:54:49');
 
 -- ----------------------------
 -- Table structure for social_like
@@ -485,11 +518,12 @@ CREATE TABLE `social_like`  (
   `create_time` datetime NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_post_user`(`post_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of social_like
 -- ----------------------------
+INSERT INTO `social_like` VALUES (1, 1, 1, '2026-02-21 19:55:30');
 
 -- ----------------------------
 -- Table structure for social_post
@@ -509,11 +543,12 @@ CREATE TABLE `social_post`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_time`(`create_time`) USING BTREE,
   INDEX `idx_user`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of social_post
 -- ----------------------------
+INSERT INTO `social_post` VALUES (1, 1, NULL, '今天跑了3公里，状态不错！', '[\"http://xx/1.png\"]', 0, 1, 1, '2026-02-21 19:52:47', '2026-02-21 20:04:08');
 
 -- ----------------------------
 -- Table structure for sport_plan
@@ -555,11 +590,12 @@ CREATE TABLE `sys_message`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE,
   INDEX `idx_user_read`(`user_id`, `is_read`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_message
 -- ----------------------------
+INSERT INTO `sys_message` VALUES (1, 1, 'RISK', '【风险预警】今日检测到较高健康风险', '触发原因：BMI偏高（肥胖）、血压偏高（需就医评估）、血糖偏高、BMI较上次上升、收缩压较上次上升、舒张压较上次上升、血糖较上次上升、睡眠不足（<6小时）、日均步数偏低（<5000）\n建议：建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议严格控制盐摄入，规律作息；如长期偏高建议就医评估；建议严格控制精制碳水摄入，餐后适度运动；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步', NULL, 0, '2026-02-21 20:17:56', NULL);
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -583,15 +619,32 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'test01', '$2a$10$AQ/2bk6DzHJI0YEXIM1s4u391b.CbgU6TOCgRbqdrUK.J.Bw9rT1C', 'USER', '小明', NULL, 1, '2026-02-19 19:10:01', '2026-01-26 15:58:45', '2026-01-26 15:58:45');
+INSERT INTO `sys_user` VALUES (1, 'test01', '$2a$10$AQ/2bk6DzHJI0YEXIM1s4u391b.CbgU6TOCgRbqdrUK.J.Bw9rT1C', 'USER', '小明', NULL, 1, '2026-02-21 20:17:24', '2026-01-26 15:58:45', '2026-01-26 15:58:45');
 INSERT INTO `sys_user` VALUES (2, 'admin01', '$2a$10$mOFffAiWHj1T2HSoo8W7CuAaPuH4D5RkJdUD2BwAYjzPXCZFLS0Si', 'USER', NULL, NULL, 1, '2026-01-28 18:44:08', '2026-01-28 18:42:32', '2026-01-28 18:42:32');
-INSERT INTO `sys_user` VALUES (3, 'admin', '$2a$10$yxevWha1ncDej.D6ReAfBeXNZGkPKFTG/5Q.ESbQ5QHYa0.bbBTQS', 'ADMIN', '超级管理员', NULL, 1, '2026-02-14 17:29:46', '2026-01-29 14:53:15', '2026-01-29 14:53:15');
+INSERT INTO `sys_user` VALUES (3, 'admin', '$2a$10$yxevWha1ncDej.D6ReAfBeXNZGkPKFTG/5Q.ESbQ5QHYa0.bbBTQS', 'ADMIN', '超级管理员', NULL, 1, '2026-02-21 20:03:22', '2026-01-29 14:53:15', '2026-01-29 14:53:15');
 INSERT INTO `sys_user` VALUES (4, 'admin02', '$2a$10$pCJpuvzsg.MOUDMdXOEMRuYJXL8Wdjr7qt8g6tEMA5tp1AiSb.Aq.', 'ADMIN', '管理员2号', NULL, 1, '2026-01-29 15:47:16', '2026-01-29 15:01:16', '2026-01-29 15:01:16');
 INSERT INTO `sys_user` VALUES (5, 'admin20260212', '$2a$10$NWboR49gyR/SP3EcU/J8k..YvyGlwdVmE4GJi72YOg/dJbgujyTbe', 'ADMIN', '张三', NULL, 1, '2026-02-13 22:02:32', '2026-02-12 15:43:36', '2026-02-12 15:43:36');
 INSERT INTO `sys_user` VALUES (6, 'admin03', '$2a$10$Eb3cpV5kkRe7Bug7YM9J1Oj.Ca6VJEfThgI5fZUQF.eWkkk.dyiIS', 'ADMIN', '李四', NULL, 1, NULL, '2026-02-14 13:15:30', '2026-02-14 13:15:30');
 INSERT INTO `sys_user` VALUES (7, 'admin04', '$2a$10$HJJ3xACTlVCM.0pM.OkVP.TTdHpzVeCL7Zobc.1jsPE7UyWQYnwJu', 'ADMIN', '王五', '13488827865', 1, NULL, '2026-02-14 13:29:11', '2026-02-14 13:29:11');
 INSERT INTO `sys_user` VALUES (8, 'admin05', '$2a$10$PUNVeazWo/rN2d8XyKPcLe5OIz07NrBcoTp2.DijwqK4j4ZBKrGX6', 'ADMIN', '管理员5号', '12345678901', 1, NULL, '2026-02-14 13:31:41', '2026-02-14 13:31:41');
 INSERT INTO `sys_user` VALUES (9, 'test02', '$2a$10$MLu3qgExLn7Pk0mn/DCyfusL7MwQ.pjZBW1VGe4uxtMlUWESdVxv.', 'USER', '辰于', '15227298800', 1, '2026-02-15 12:24:43', '2026-02-15 12:20:20', '2026-02-15 12:20:20');
+
+-- ----------------------------
+-- Table structure for user_badge
+-- ----------------------------
+DROP TABLE IF EXISTS `user_badge`;
+CREATE TABLE `user_badge`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `badge_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_badge`(`user_id`, `badge_code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_badge
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for user_like

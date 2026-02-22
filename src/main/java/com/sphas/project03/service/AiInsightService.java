@@ -1,6 +1,6 @@
 package com.sphas.project03.service;
 
-import com.sphas.project03.dto.AiPredictionDTO;
+import com.sphas.project03.controller.dto.AiPredictionDTO;
 
 import java.util.List;
 
