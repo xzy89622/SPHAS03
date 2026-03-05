@@ -10,6 +10,7 @@ import com.sphas.project03.entity.HealthRiskAlert;
 import com.sphas.project03.entity.Notice;
 import com.sphas.project03.entity.SysMessage;
 import com.sphas.project03.service.*;
+import com.sphas.project03.service.BlockChainLogService;
 import com.sphas.project03.utils.PrivacyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ public class RiskServiceImpl implements RiskService {
     private final NoticeService noticeService;
     private final AiInsightService aiInsightService;
     private final SysMessageService sysMessageService;
+    private final BlockChainLogService blockChainLogService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -40,12 +42,14 @@ public class RiskServiceImpl implements RiskService {
                            HealthRiskAlertService alertService,
                            NoticeService noticeService,
                            AiInsightService aiInsightService,
-                           SysMessageService sysMessageService) {
+                           SysMessageService sysMessageService,
+                           BlockChainLogService blockChainLogService) {
         this.metricService = metricService;
         this.alertService = alertService;
         this.noticeService = noticeService;
         this.aiInsightService = aiInsightService;
         this.sysMessageService = sysMessageService;
+        this.blockChainLogService = blockChainLogService;
     }
 
     @Override
@@ -203,6 +207,17 @@ public class RiskServiceImpl implements RiskService {
             alert.setCreateTime(LocalDateTime.now());
 
             alertService.save(alert);
+
+            // ✅ 风险预警结果属于敏感结论：写入一次“模拟区块链”审计日志
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("alertId", alert.getId());
+            payload.put("riskLevel", alert.getRiskLevel());
+            payload.put("riskScore", alert.getRiskScore());
+            payload.put("sourceRecordId", alert.getSourceRecordId());
+            payload.put("reasons", rawReasons);
+            payload.put("aiSummary", alert.getAiSummary());
+            blockChainLogService.append(userId, "RISK_ALERT", alert.getId(), "WRITE", payload);
+
         } catch (Exception e) {
             log.error("用户 {} 风险评估落库失败", userId, e);
         }

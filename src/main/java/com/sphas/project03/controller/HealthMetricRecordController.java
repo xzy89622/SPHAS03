@@ -5,6 +5,7 @@ import com.sphas.project03.common.BizException;
 import com.sphas.project03.common.R;
 import com.sphas.project03.entity.HealthMetricRecord;
 import com.sphas.project03.service.HealthMetricRecordService;
+import com.sphas.project03.service.BlockChainLogService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,9 +25,12 @@ import java.util.Map;
 public class HealthMetricRecordController extends BaseController {
 
     private final HealthMetricRecordService metricService;
+    private final BlockChainLogService blockChainLogService;
 
-    public HealthMetricRecordController(HealthMetricRecordService metricService) {
+    public HealthMetricRecordController(HealthMetricRecordService metricService,
+                                      BlockChainLogService blockChainLogService) {
         this.metricService = metricService;
+        this.blockChainLogService = blockChainLogService;
     }
 
     /**
@@ -63,6 +67,18 @@ public class HealthMetricRecordController extends BaseController {
         }
 
         metricService.save(record);
+
+        // ✅ 体质记录属于敏感健康数据：写入一次“模拟区块链”审计日志
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("recordId", record.getId());
+        payload.put("bmi", record.getBmi());
+        payload.put("weightKg", record.getWeightKg());
+        payload.put("systolic", record.getSystolic());
+        payload.put("diastolic", record.getDiastolic());
+        payload.put("bloodSugar", record.getBloodSugar());
+        payload.put("recordTime", String.valueOf(record.getRecordTime()));
+        blockChainLogService.append(userId, "METRIC", record.getId(), "WRITE", payload);
+
         return R.ok(record.getId());
     }
 

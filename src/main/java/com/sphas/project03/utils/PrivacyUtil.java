@@ -64,4 +64,19 @@ public class PrivacyUtil {
             return encrypted;
         }
     }
+
+    /**
+     * SHA-256（Base64） - 给“模拟区块链日志”统一用
+     */
+    public static String sha256(String raw) {
+        if (raw == null) raw = "";
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(raw.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            return "HASH_ERROR";
+        }
+    }
+
 }
