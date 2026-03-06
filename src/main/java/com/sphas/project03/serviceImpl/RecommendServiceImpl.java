@@ -6,14 +6,13 @@ import com.sphas.project03.common.BizException;
 import com.sphas.project03.entity.*;
 import com.sphas.project03.mapper.UserRecommendationMapper;
 import com.sphas.project03.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-// 【新增】引入日志工具，方便排查推荐失败的问题
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 推荐服务实现（规则引擎版）
@@ -22,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public class RecommendServiceImpl implements RecommendService {
 
     private static final Logger log = LoggerFactory.getLogger(RecommendServiceImpl.class);
+
     private final HealthMetricRecordService metricService;
     private final BmiStandardService bmiStandardService;
     private final DietPlanService dietPlanService;
@@ -44,6 +44,9 @@ public class RecommendServiceImpl implements RecommendService {
     @Override
     public Map<String, Object> recommendToday(Long userId, Map<String, Integer> scores) {
 
+        // ✅ 兜底：scores 允许为空，避免 NPE
+        if (scores == null) scores = new HashMap<>();
+
         // 1) 最新体质记录（拿BMI）
         HealthMetricRecord latest = metricService.getOne(
                 new LambdaQueryWrapper<HealthMetricRecord>()
@@ -65,8 +68,15 @@ public class RecommendServiceImpl implements RecommendService {
         );
         String bmiLevel = standard == null ? "未知" : standard.getLevel();
 
-        // 3) 规则：根据 SPORT 得分决定运动强度，根据 DIET 得分补饮食提示
-        int sportScore = scores.getOrDefault("SPORT", 0);
+        // 3) 规则：根据 SPORT 得分决定运动强度
+        // ✅ 兼容：前端可能只传 default（删题后更容易出现）
+        int sportScore = 0;
+        if (scores.containsKey("SPORT")) {
+            sportScore = scores.getOrDefault("SPORT", 0);
+        } else if (scores.containsKey("default")) {
+            sportScore = scores.getOrDefault("default", 0);
+        }
+
         String intensity;
         if (sportScore >= 3) intensity = "MID";
         else if (sportScore >= 1) intensity = "LOW";
@@ -108,17 +118,13 @@ public class RecommendServiceImpl implements RecommendService {
             rec.setUserId(userId);
             rec.setBmi(latest.getBmi());
             rec.setBmiLevel(bmiLevel);
-            // 记录各项得分详情
             rec.setScoresJson(objectMapper.writeValueAsString(scores));
             rec.setDietPlanId(diet == null ? null : diet.getId());
             rec.setSportPlanId(sport == null ? null : sport.getId());
             rec.setReason(reason);
             rec.setCreateTime(LocalDateTime.now());
-
             userRecommendationMapper.insert(rec);
         } catch (Exception e) {
-            // 【修改】捕获异常并打印日志，而不是直接忽略
-            // 这样如果落库失败（如字段超长），控制台能看到报错，但不会阻断给前端返回结果
             log.error("用户 {} 每日推荐方案落库失败", userId, e);
         }
 
@@ -132,4 +138,3 @@ public class RecommendServiceImpl implements RecommendService {
         return res;
     }
 }
-
