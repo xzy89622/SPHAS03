@@ -11,7 +11,7 @@
  Target Server Version : 50735 (5.7.35)
  File Encoding         : 65001
 
- Date: 21/02/2026 21:05:23
+ Date: 06/03/2026 13:05:04
 */
 
 SET NAMES utf8mb4;
@@ -38,6 +38,28 @@ CREATE TABLE `badge`  (
 INSERT INTO `badge` VALUES (1, 'FIRST_CHALLENGE', '初次挑战', '首次完成挑战获得', '', '2026-02-21 20:28:53');
 INSERT INTO `badge` VALUES (2, 'POINTS_50', '积分达人', '总积分达到50获得', '', '2026-02-21 20:28:53');
 INSERT INTO `badge` VALUES (3, 'POST_3', '社区活跃', '发布3条帖子获得', '', '2026-02-21 20:28:53');
+
+-- ----------------------------
+-- Table structure for block_chain_log
+-- ----------------------------
+DROP TABLE IF EXISTS `block_chain_log`;
+CREATE TABLE `block_chain_log`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL,
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `biz_id` bigint(20) NULL DEFAULT NULL,
+  `action` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `data_hash` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `prev_hash` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `block_hash` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `create_time` datetime NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_biz`(`user_id`, `biz_type`, `id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of block_chain_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for bmi_standard
@@ -449,39 +471,9 @@ CREATE TABLE `question_bank`  (
 -- ----------------------------
 -- Records of question_bank
 -- ----------------------------
-INSERT INTO `question_bank` VALUES (1, 'SPORT', '你一周运动几次？', '[{\"label\":\"0次\",\"score\":0},{\"label\":\"1-2次\",\"score\":1},{\"label\":\"3-4次\",\"score\":2},{\"label\":\"5次及以上\",\"score\":3}]', 1, '2026-01-29 16:46:33', '2026-01-29 16:46:33');
-INSERT INTO `question_bank` VALUES (2, 'SLEEP', '你一天睡多少个小时', '[{\"text\":\"每天睡10个小时\",\"score\":4},{\"text\":\"每天睡9个小时\",\"score\":5}]', 1, '2026-02-13 18:36:11', '2026-02-13 18:36:11');
-INSERT INTO `question_bank` VALUES (3, 'STRESS', '你的压力值如何', '[{\"text\":\"正常\",\"score\":10},{\"text\":\"略微有压力\",\"score\":12}]', 1, '2026-02-13 18:56:31', '2026-02-13 18:56:31');
-INSERT INTO `question_bank` VALUES (7, 'DIET', '你每天吃蔬菜水果吗？', '[{\"text\":\"每天都吃\",\"score\":10},{\"text\":\"偶尔吃\",\"score\":5},{\"text\":\"几乎不吃\",\"score\":0}]', 1, '2026-02-13 19:56:37', '2026-02-13 19:56:37');
-INSERT INTO `question_bank` VALUES (16, 'DIET', '你的晚餐时间通常？', '[{\"text\":\"19点前\",\"score\":10},{\"text\":\"19-21点\",\"score\":6},{\"text\":\"21点后\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (17, 'DIET', '你是否会暴饮暴食？', '[{\"text\":\"几乎不会\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (18, 'SLEEP', '你平均每天睡眠多久？', '[{\"text\":\"7-9小时\",\"score\":10},{\"text\":\"6-7小时\",\"score\":6},{\"text\":\"少于6小时\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (19, 'SLEEP', '你入睡是否困难？', '[{\"text\":\"几乎不困难\",\"score\":10},{\"text\":\"偶尔困难\",\"score\":5},{\"text\":\"经常困难\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (20, 'SLEEP', '你夜间是否会频繁醒来？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (21, 'SLEEP', '你起床后是否精神充足？', '[{\"text\":\"精神很好\",\"score\":10},{\"text\":\"一般\",\"score\":5},{\"text\":\"很疲惫\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (22, 'SLEEP', '你睡前会长时间使用手机吗？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (23, 'STRESS', '你最近压力水平如何？', '[{\"text\":\"很低\",\"score\":10},{\"text\":\"一般\",\"score\":5},{\"text\":\"很高\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (24, 'STRESS', '你是否经常感到焦虑？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (25, 'STRESS', '你是否会通过运动/兴趣减压？', '[{\"text\":\"经常\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"从不\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (26, 'STRESS', '你是否有足够的休闲时间？', '[{\"text\":\"充足\",\"score\":10},{\"text\":\"一般\",\"score\":5},{\"text\":\"很少\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
-INSERT INTO `question_bank` VALUES (27, 'STRESS', '你最近情绪波动是否明显？', '[{\"text\":\"不明显\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"很明显\",\"score\":0}]', 1, '2026-02-13 20:21:57', '2026-02-13 20:21:57');
 INSERT INTO `question_bank` VALUES (28, 'SPORT', '你每周运动几次？', '[{\"text\":\"5次及以上\",\"score\":10},{\"text\":\"3-4次\",\"score\":7},{\"text\":\"1-2次\",\"score\":4},{\"text\":\"几乎不运动\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
 INSERT INTO `question_bank` VALUES (29, 'SPORT', '你每次运动时长通常是多少？', '[{\"text\":\"60分钟以上\",\"score\":10},{\"text\":\"30-60分钟\",\"score\":7},{\"text\":\"10-30分钟\",\"score\":4},{\"text\":\"少于10分钟\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
 INSERT INTO `question_bank` VALUES (30, 'SPORT', '你是否会做力量训练？', '[{\"text\":\"每周规律进行\",\"score\":10},{\"text\":\"偶尔进行\",\"score\":5},{\"text\":\"从不\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (31, 'SPORT', '你日常步行/活动量如何？', '[{\"text\":\"每天8000步以上\",\"score\":10},{\"text\":\"每天5000-8000步\",\"score\":6},{\"text\":\"每天少于5000步\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (32, 'SPORT', '你是否久坐（连续坐超过1小时）？', '[{\"text\":\"经常\",\"score\":0},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"很少\",\"score\":10}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (33, 'DIET', '你每天吃蔬菜水果吗？', '[{\"text\":\"每天都吃\",\"score\":10},{\"text\":\"偶尔吃\",\"score\":5},{\"text\":\"几乎不吃\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (34, 'DIET', '你每周喝含糖饮料的频率？', '[{\"text\":\"几乎不喝\",\"score\":10},{\"text\":\"每周1-2次\",\"score\":6},{\"text\":\"每周3次及以上\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (35, 'DIET', '你是否经常吃油炸食品？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (36, 'DIET', '你的晚餐时间通常？', '[{\"text\":\"19点前\",\"score\":10},{\"text\":\"19-21点\",\"score\":6},{\"text\":\"21点后\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (37, 'DIET', '你是否会暴饮暴食？', '[{\"text\":\"几乎不会\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (38, 'SLEEP', '你平均每天睡眠多久？', '[{\"text\":\"7-9小时\",\"score\":10},{\"text\":\"6-7小时\",\"score\":6},{\"text\":\"少于6小时\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (39, 'SLEEP', '你入睡是否困难？', '[{\"text\":\"几乎不困难\",\"score\":10},{\"text\":\"偶尔困难\",\"score\":5},{\"text\":\"经常困难\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (40, 'SLEEP', '你夜间是否会频繁醒来？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (41, 'SLEEP', '你起床后是否精神充足？', '[{\"text\":\"精神很好\",\"score\":10},{\"text\":\"一般\",\"score\":5},{\"text\":\"很疲惫\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (42, 'SLEEP', '你睡前会长时间使用手机吗？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (43, 'STRESS', '你最近压力水平如何？', '[{\"text\":\"很低\",\"score\":10},{\"text\":\"一般\",\"score\":5},{\"text\":\"很高\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
-INSERT INTO `question_bank` VALUES (44, 'STRESS', '你是否经常感到焦虑？', '[{\"text\":\"很少\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"经常\",\"score\":0}]', 1, '2026-02-14 13:00:14', '2026-02-14 13:00:14');
 INSERT INTO `question_bank` VALUES (45, 'STRESS', '你是否会通过运动/兴趣减压？', '[{\"text\":\"经常\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"从不\",\"score\":0}]', 1, '2026-02-14 13:00:15', '2026-02-14 13:00:15');
 INSERT INTO `question_bank` VALUES (46, 'STRESS', '你是否有足够的休闲时间？', '[{\"text\":\"充足\",\"score\":10},{\"text\":\"一般\",\"score\":5},{\"text\":\"很少\",\"score\":0}]', 1, '2026-02-14 13:00:15', '2026-02-14 13:00:15');
 INSERT INTO `question_bank` VALUES (47, 'STRESS', '你最近情绪波动是否明显？', '[{\"text\":\"不明显\",\"score\":10},{\"text\":\"偶尔\",\"score\":5},{\"text\":\"很明显\",\"score\":0}]', 1, '2026-02-14 13:00:15', '2026-02-14 13:00:15');
@@ -548,7 +540,7 @@ CREATE TABLE `social_post`  (
 -- ----------------------------
 -- Records of social_post
 -- ----------------------------
-INSERT INTO `social_post` VALUES (1, 1, NULL, '今天跑了3公里，状态不错！', '[\"http://xx/1.png\"]', 0, 1, 1, '2026-02-21 19:52:47', '2026-02-21 20:04:08');
+INSERT INTO `social_post` VALUES (1, 1, NULL, '今天跑了3公里，状态不错！', '[\"http://xx/1.png\"]', 1, 1, 1, '2026-02-21 19:52:47', '2026-02-22 12:26:23');
 
 -- ----------------------------
 -- Table structure for sport_plan
@@ -590,12 +582,13 @@ CREATE TABLE `sys_message`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE,
   INDEX `idx_user_read`(`user_id`, `is_read`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_message
 -- ----------------------------
 INSERT INTO `sys_message` VALUES (1, 1, 'RISK', '【风险预警】今日检测到较高健康风险', '触发原因：BMI偏高（肥胖）、血压偏高（需就医评估）、血糖偏高、BMI较上次上升、收缩压较上次上升、舒张压较上次上升、血糖较上次上升、睡眠不足（<6小时）、日均步数偏低（<5000）\n建议：建议控制总热量摄入，增加有氧+力量训练，持续监测体重变化；建议严格控制盐摄入，规律作息；如长期偏高建议就医评估；建议严格控制精制碳水摄入，餐后适度运动；建议保持规律作息，逐步提高到6.5-8小时睡眠；建议每天增加步行量，逐步达到≥6000-8000步', NULL, 0, '2026-02-21 20:17:56', NULL);
+INSERT INTO `sys_message` VALUES (2, 1, 'AUDIT', '【帖子已恢复】你的帖子已重新上架', '你的帖子已被管理员恢复展示。', NULL, 0, '2026-02-22 12:26:23', NULL);
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -619,9 +612,9 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'test01', '$2a$10$AQ/2bk6DzHJI0YEXIM1s4u391b.CbgU6TOCgRbqdrUK.J.Bw9rT1C', 'USER', '小明', NULL, 1, '2026-02-21 20:17:24', '2026-01-26 15:58:45', '2026-01-26 15:58:45');
+INSERT INTO `sys_user` VALUES (1, 'test01', '$2a$10$AQ/2bk6DzHJI0YEXIM1s4u391b.CbgU6TOCgRbqdrUK.J.Bw9rT1C', 'USER', '小明', NULL, 1, '2026-03-05 16:49:50', '2026-01-26 15:58:45', '2026-01-26 15:58:45');
 INSERT INTO `sys_user` VALUES (2, 'admin01', '$2a$10$mOFffAiWHj1T2HSoo8W7CuAaPuH4D5RkJdUD2BwAYjzPXCZFLS0Si', 'USER', NULL, NULL, 1, '2026-01-28 18:44:08', '2026-01-28 18:42:32', '2026-01-28 18:42:32');
-INSERT INTO `sys_user` VALUES (3, 'admin', '$2a$10$yxevWha1ncDej.D6ReAfBeXNZGkPKFTG/5Q.ESbQ5QHYa0.bbBTQS', 'ADMIN', '超级管理员', NULL, 1, '2026-02-21 20:03:22', '2026-01-29 14:53:15', '2026-01-29 14:53:15');
+INSERT INTO `sys_user` VALUES (3, 'admin', '$2a$10$yxevWha1ncDej.D6ReAfBeXNZGkPKFTG/5Q.ESbQ5QHYa0.bbBTQS', 'ADMIN', '超级管理员', NULL, 1, '2026-03-04 15:13:07', '2026-01-29 14:53:15', '2026-01-29 14:53:15');
 INSERT INTO `sys_user` VALUES (4, 'admin02', '$2a$10$pCJpuvzsg.MOUDMdXOEMRuYJXL8Wdjr7qt8g6tEMA5tp1AiSb.Aq.', 'ADMIN', '管理员2号', NULL, 1, '2026-01-29 15:47:16', '2026-01-29 15:01:16', '2026-01-29 15:01:16');
 INSERT INTO `sys_user` VALUES (5, 'admin20260212', '$2a$10$NWboR49gyR/SP3EcU/J8k..YvyGlwdVmE4GJi72YOg/dJbgujyTbe', 'ADMIN', '张三', NULL, 1, '2026-02-13 22:02:32', '2026-02-12 15:43:36', '2026-02-12 15:43:36');
 INSERT INTO `sys_user` VALUES (6, 'admin03', '$2a$10$Eb3cpV5kkRe7Bug7YM9J1Oj.Ca6VJEfThgI5fZUQF.eWkkk.dyiIS', 'ADMIN', '李四', NULL, 1, NULL, '2026-02-14 13:15:30', '2026-02-14 13:15:30');
@@ -723,12 +716,19 @@ CREATE TABLE `user_recommendation`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of user_recommendation
 -- ----------------------------
 INSERT INTO `user_recommendation` VALUES (1, 1, 25.80, '超重', '{\"SPORT\":3,\"DIET\":2,\"SLEEP\":1,\"STRESS\":1}', 1, 2, '基于你当前BMI(25.80，超重)与运动得分(3)生成今日方案', '2026-01-29 17:18:50');
+INSERT INTO `user_recommendation` VALUES (2, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 16:45:21');
+INSERT INTO `user_recommendation` VALUES (3, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 16:46:55');
+INSERT INTO `user_recommendation` VALUES (4, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 16:46:59');
+INSERT INTO `user_recommendation` VALUES (5, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 16:50:39');
+INSERT INTO `user_recommendation` VALUES (6, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 16:52:05');
+INSERT INTO `user_recommendation` VALUES (7, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 16:52:24');
+INSERT INTO `user_recommendation` VALUES (8, 1, 31.02, '肥胖', '{}', 2, 3, '基于你当前BMI(31.02，肥胖)与运动得分(0)生成今日方案', '2026-03-05 17:00:23');
 
 -- ----------------------------
 -- Table structure for weekly_report
