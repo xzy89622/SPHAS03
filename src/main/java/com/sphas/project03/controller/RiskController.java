@@ -5,15 +5,16 @@ import com.sphas.project03.common.BizException;
 import com.sphas.project03.common.R;
 import com.sphas.project03.controller.dto.RiskDashboardDTO;
 import com.sphas.project03.entity.HealthRiskAlert;
+import com.sphas.project03.entity.SysMessage;
 import com.sphas.project03.service.HealthRiskAlertService;
 import com.sphas.project03.service.RiskDashboardService;
 import com.sphas.project03.service.RiskService;
+import com.sphas.project03.service.SysMessageService;
 import com.sphas.project03.utils.PrivacyUtil;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 健康风险预警（规则引擎版）
@@ -25,13 +26,16 @@ public class RiskController extends BaseController {
     private final RiskService riskService;
     private final HealthRiskAlertService alertService;
     private final RiskDashboardService dashboardService;
+    private final SysMessageService sysMessageService;
 
     public RiskController(RiskService riskService,
                           HealthRiskAlertService alertService,
-                          RiskDashboardService dashboardService) {
+                          RiskDashboardService dashboardService,
+                          SysMessageService sysMessageService) {
         this.riskService = riskService;
         this.alertService = alertService;
         this.dashboardService = dashboardService;
+        this.sysMessageService = sysMessageService;
     }
 
     /**
@@ -68,10 +72,8 @@ public class RiskController extends BaseController {
         Long userId = getUserId(request);
         if (userId == null) throw new BizException("未登录");
 
-        // limit 合法性保护
         if (limit <= 0 || limit > 100) limit = 20;
 
-        // 按时间倒序取最近N条
         List<HealthRiskAlert> list = alertService.list(
                 new LambdaQueryWrapper<HealthRiskAlert>()
                         .eq(HealthRiskAlert::getUserId, userId)
@@ -79,7 +81,6 @@ public class RiskController extends BaseController {
                         .last("limit " + limit)
         );
 
-        // reasons_json 是加密存储，这里解密后再返回给前端
         if (list != null) {
             for (HealthRiskAlert a : list) {
                 a.setReasonsJson(PrivacyUtil.decrypt(a.getReasonsJson()));
@@ -87,5 +88,73 @@ public class RiskController extends BaseController {
         }
 
         return R.ok(list);
+    }
+
+    /**
+     * 预警历史 + 顾问建议联动
+     * 说明：
+     * 1. 给每条风险记录补最近一条 ADVICE 消息
+     * 2. 小程序风险页可以直接展示顾问建议
+     * 3. 也能从风险页跳到消息详情
+     */
+    @GetMapping("/history-with-advice")
+    public R<List<Map<String, Object>>> historyWithAdvice(@RequestParam(defaultValue = "20") int limit,
+                                                          HttpServletRequest request) {
+        Long userId = getUserId(request);
+        if (userId == null) throw new BizException("未登录");
+
+        if (limit <= 0 || limit > 100) limit = 20;
+
+        List<HealthRiskAlert> alertList = alertService.list(
+                new LambdaQueryWrapper<HealthRiskAlert>()
+                        .eq(HealthRiskAlert::getUserId, userId)
+                        .orderByDesc(HealthRiskAlert::getCreateTime)
+                        .last("limit " + limit)
+        );
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (HealthRiskAlert a : alertList) {
+            if (a == null) {
+                continue;
+            }
+
+            String reasonsJson = PrivacyUtil.decrypt(a.getReasonsJson());
+
+            SysMessage adviceMsg = sysMessageService.getOne(
+                    new LambdaQueryWrapper<SysMessage>()
+                            .eq(SysMessage::getUserId, userId)
+                            .eq(SysMessage::getType, "ADVICE")
+                            .eq(SysMessage::getBizId, a.getId())
+                            .orderByDesc(SysMessage::getCreateTime)
+                            .last("limit 1"),
+                    false
+            );
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", a.getId());
+            item.put("riskLevel", a.getRiskLevel());
+            item.put("riskScore", a.getRiskScore());
+            item.put("reasonsJson", reasonsJson);
+            item.put("advice", a.getAdvice());
+            item.put("aiSummary", a.getAiSummary());
+            item.put("createTime", a.getCreateTime());
+
+            if (adviceMsg != null) {
+                Map<String, Object> adviceInfo = new LinkedHashMap<>();
+                adviceInfo.put("messageId", adviceMsg.getId());
+                adviceInfo.put("title", adviceMsg.getTitle());
+                adviceInfo.put("content", adviceMsg.getContent());
+                adviceInfo.put("isRead", adviceMsg.getIsRead());
+                adviceInfo.put("createTime", adviceMsg.getCreateTime());
+                adviceInfo.put("readTime", adviceMsg.getReadTime());
+                item.put("advisorAdvice", adviceInfo);
+            } else {
+                item.put("advisorAdvice", null);
+            }
+
+            result.add(item);
+        }
+
+        return R.ok(result);
     }
 }

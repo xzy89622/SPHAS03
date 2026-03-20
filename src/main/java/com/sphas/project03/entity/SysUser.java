@@ -1,55 +1,169 @@
 package com.sphas.project03.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 用户表实体
+ * 系统用户
  */
 @TableName("sys_user")
 public class SysUser {
 
-    private Long id;                 // 主键
-    private String username;         // 账号
-    private String password;         // 密码(加密后)
-    private String role;             // 角色(USER/ADMIN/AI_ADVISOR)
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
-    private String nickname;         // 昵称
-    private String phone;            // 手机号
-    private Integer status;          // 1正常 0禁用
+    // 用户名
+    private String username;
 
-    private LocalDateTime lastLoginTime; // 最后登录时间
-    private LocalDateTime createTime;    // 创建时间
-    private LocalDateTime updateTime;    // 更新时间
+    // 密码（加密后）
+    private String password;
 
-    // ===== getter/setter（不依赖Lombok，最稳） =====
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // 角色：USER / ADMIN / AI_ADVISOR
+    private String role;
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    // 昵称
+    private String nickname;
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    // 手机号
+    private String phone;
 
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    // 年龄
+    private Integer age;
 
-    public String getNickname() { return nickname; }
-    public void setNickname(String nickname) { this.nickname = nickname; }
+    // 性别：男 / 女
+    private String gender;
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    // 身高（cm）
+    private BigDecimal heightCm;
 
-    public Integer getStatus() { return status; }
-    public void setStatus(Integer status) { this.status = status; }
+    // 初始体重（kg）
+    private BigDecimal initialWeightKg;
 
-    public LocalDateTime getLastLoginTime() { return lastLoginTime; }
-    public void setLastLoginTime(LocalDateTime lastLoginTime) { this.lastLoginTime = lastLoginTime; }
+    // 状态：1正常 0禁用
+    private Integer status;
 
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    // 最后登录时间
+    private LocalDateTime lastLoginTime;
 
-    public LocalDateTime getUpdateTime() { return updateTime; }
-    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+    // 创建时间
+    private LocalDateTime createTime;
+
+    // 更新时间
+    private LocalDateTime updateTime;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public BigDecimal getHeightCm() {
+        return heightCm;
+    }
+
+    public void setHeightCm(BigDecimal heightCm) {
+        this.heightCm = heightCm;
+    }
+
+    public BigDecimal getInitialWeightKg() {
+        return initialWeightKg;
+    }
+
+    public void setInitialWeightKg(BigDecimal initialWeightKg) {
+        this.initialWeightKg = initialWeightKg;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getLastLoginTime() {
+        return lastLoginTime;
+    }
+
+    public void setLastLoginTime(LocalDateTime lastLoginTime) {
+        this.lastLoginTime = lastLoginTime;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
 }

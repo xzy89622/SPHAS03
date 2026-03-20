@@ -13,6 +13,7 @@ public class SocialComment {
     private Long id;
     private Long postId;
     private Long userId;
+    private String nickname;     // 新增：评论时冗余保存昵称
     private String content;
     private LocalDateTime createTime;
 
@@ -24,6 +25,9 @@ public class SocialComment {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public String getNickname() { return nickname; }
+    public void setNickname(String nickname) { this.nickname = nickname; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }

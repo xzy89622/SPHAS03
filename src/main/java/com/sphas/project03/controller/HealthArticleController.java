@@ -46,6 +46,15 @@ public class HealthArticleController extends BaseController {
         if (article == null || article.getStatus() == null || article.getStatus() != 1) {
             throw new BizException("文章不存在或已下线");
         }
+
+        Integer views = article.getViews();
+        if (views == null) {
+            views = 0;
+        }
+        article.setViews(views + 1);
+        article.setUpdateTime(LocalDateTime.now());
+        articleService.updateById(article);
+
         return R.ok(article);
     }
 
@@ -102,10 +111,13 @@ public class HealthArticleController extends BaseController {
                 article.setPublishTime(now);
             }
 
+            if (article.getViews() == null) {
+                article.setViews(0);
+            }
+
             article.setCreateTime(now);
             article.setUpdateTime(now);
 
-            // 作者：如果你后端有拦截器写入 userId，可填上（没有也不影响）
             Long authorId = getUserId(request);
             if (authorId != null) article.setAuthorId(authorId);
 
@@ -122,7 +134,6 @@ public class HealthArticleController extends BaseController {
 
             if (article.getStatus() != null) {
                 db.setStatus(article.getStatus());
-                // 从下线切回上线时，补 publishTime
                 if (article.getStatus() == 1 && db.getPublishTime() == null) {
                     db.setPublishTime(now);
                 }
@@ -152,7 +163,7 @@ public class HealthArticleController extends BaseController {
     }
 
     /**
-     * 管理端：上线文章（可选，但前端会用到更方便）
+     * 管理端：上线文章
      * POST /api/article/admin/online/{id}
      */
     @PostMapping("/admin/online/{id}")

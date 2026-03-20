@@ -8,12 +8,14 @@ import com.sphas.project03.entity.PointRecord;
 import com.sphas.project03.entity.SocialComment;
 import com.sphas.project03.entity.SocialLike;
 import com.sphas.project03.entity.SocialPost;
+import com.sphas.project03.entity.SysUser;
 import com.sphas.project03.service.AchievementService;
 import com.sphas.project03.service.PointRecordService;
 import com.sphas.project03.service.PointsLeaderboardService;
 import com.sphas.project03.service.SocialCommentService;
 import com.sphas.project03.service.SocialLikeService;
 import com.sphas.project03.service.SocialPostService;
+import com.sphas.project03.service.SysUserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,8 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,6 +40,7 @@ public class SocialControllerV2 extends BaseController {
     private final SocialPostService postService;
     private final SocialCommentService commentService;
     private final SocialLikeService likeService;
+    private final SysUserService sysUserService;
 
     private final PointRecordService pointRecordService;
     private final PointsLeaderboardService pointsLeaderboardService;
@@ -52,6 +54,7 @@ public class SocialControllerV2 extends BaseController {
     public SocialControllerV2(SocialPostService postService,
                               SocialCommentService commentService,
                               SocialLikeService likeService,
+                              SysUserService sysUserService,
                               PointRecordService pointRecordService,
                               PointsLeaderboardService pointsLeaderboardService,
                               AchievementService achievementService,
@@ -59,6 +62,7 @@ public class SocialControllerV2 extends BaseController {
         this.postService = postService;
         this.commentService = commentService;
         this.likeService = likeService;
+        this.sysUserService = sysUserService;
         this.pointRecordService = pointRecordService;
         this.pointsLeaderboardService = pointsLeaderboardService;
         this.achievementService = achievementService;
@@ -66,14 +70,12 @@ public class SocialControllerV2 extends BaseController {
     }
 
     /**
-     * ✅ 社区图片上传（返回可访问URL）
-     * 前端先上传拿到URL，拼进 imagesJson 再发帖
+     * 社区图片上传（返回可访问URL）
      */
     @PostMapping("/upload")
     public R<String> upload(@RequestParam("file") MultipartFile file,
                             HttpServletRequest request) throws IOException {
 
-        // ✅ 你项目里没有 requireUserId()，这里按你原来习惯写
         Long userId = getUserId(request);
         if (userId == null) throw new BizException("未登录");
 
@@ -81,7 +83,6 @@ public class SocialControllerV2 extends BaseController {
             return R.fail("文件为空");
         }
 
-        // 1) 新文件名
         String originalName = file.getOriginalFilename();
         String suffix = "";
         if (originalName != null && originalName.contains(".")) {
@@ -89,7 +90,6 @@ public class SocialControllerV2 extends BaseController {
         }
         String newName = UUID.randomUUID().toString().replace("-", "") + suffix;
 
-        // 2) 保存到本地：<项目根>/upload/social
         String baseDir = System.getProperty("user.dir");
         File dir = new File(baseDir, "upload/social");
         if (!dir.exists()) {
@@ -102,7 +102,6 @@ public class SocialControllerV2 extends BaseController {
         File dest = new File(dir, newName);
         file.transferTo(dest);
 
-        // 3) 返回访问URL（WebConfig 已把 upload/ 映射到 /upload/**）
         String fileUrl = baseUrl + "/upload/social/" + newName;
         return R.ok(fileUrl);
     }
@@ -118,22 +117,22 @@ public class SocialControllerV2 extends BaseController {
         if (dto == null || !StringUtils.hasText(dto.getContent())) throw new BizException("content不能为空");
 
         LocalDateTime now = LocalDateTime.now();
+        String nickname = loadNickname(userId);
 
         SocialPost p = new SocialPost();
         p.setUserId(userId);
+        p.setNickname(nickname);
         p.setContent(dto.getContent());
         p.setImagesJson(dto.getImagesJson());
         p.setLikeCount(0);
         p.setCommentCount(0);
-        p.setStatus(2); // ✅ 待审核
+        p.setStatus(2); // 待审核
+        p.setDeletedFlag(0);
         p.setCreateTime(now);
         p.setUpdateTime(now);
         postService.save(p);
 
-        // ✅ 发帖积分 +5（幂等）
         addPointsOnce(userId, 5, "POST_CREATE", p.getId(), "发布日志/帖子");
-
-        // ✅ 触发勋章：发帖次数成就
         achievementService.onPostCreated(userId);
 
         return R.ok(p.getId());
@@ -152,7 +151,16 @@ public class SocialControllerV2 extends BaseController {
         qw.eq(SocialPost::getStatus, 1);
         qw.orderByDesc(SocialPost::getCreateTime);
 
-        return R.ok(postService.page(page, qw));
+        Page<SocialPost> result = postService.page(page, qw);
+
+        List<SocialPost> records = result.getRecords();
+        if (records != null) {
+            for (SocialPost post : records) {
+                fillPostNickname(post);
+            }
+        }
+
+        return R.ok(result);
     }
 
     /**
@@ -163,21 +171,24 @@ public class SocialControllerV2 extends BaseController {
         SocialPost p = postService.getById(postId);
         if (p == null) throw new BizException("帖子不存在");
 
+        if (p.getDeletedFlag() != null && p.getDeletedFlag() == 1) {
+            throw new BizException("帖子已删除");
+        }
+
+        fillPostNickname(p);
+
         Long userId = getUserId(request);
 
-        // ✅ 通过：所有人可看
         if (p.getStatus() != null && p.getStatus() == 1) {
             return R.ok(buildDetail(p, userId));
         }
 
-        // ✅ 待审/驳回/隐藏：只有作者本人能看
         if (userId == null || !userId.equals(p.getUserId())) {
             throw new BizException("帖子未通过审核或已隐藏");
         }
 
         return R.ok(buildDetail(p, userId));
     }
-
     /**
      * 评论分页（帖子必须通过）
      */
@@ -197,7 +208,16 @@ public class SocialControllerV2 extends BaseController {
         qw.eq(SocialComment::getPostId, postId);
         qw.orderByAsc(SocialComment::getCreateTime);
 
-        return R.ok(commentService.page(page, qw));
+        Page<SocialComment> result = commentService.page(page, qw);
+
+        List<SocialComment> records = result.getRecords();
+        if (records != null) {
+            for (SocialComment comment : records) {
+                fillCommentNickname(comment);
+            }
+        }
+
+        return R.ok(result);
     }
 
     /**
@@ -214,9 +234,12 @@ public class SocialControllerV2 extends BaseController {
         SocialPost p = postService.getById(dto.getPostId());
         if (p == null || p.getStatus() == null || p.getStatus() != 1) throw new BizException("帖子未通过审核");
 
+        String nickname = loadNickname(userId);
+
         SocialComment c = new SocialComment();
         c.setPostId(dto.getPostId());
         c.setUserId(userId);
+        c.setNickname(nickname);
         c.setContent(dto.getContent());
         c.setCreateTime(LocalDateTime.now());
         commentService.save(c);
@@ -284,13 +307,14 @@ public class SocialControllerV2 extends BaseController {
         if (p == null) throw new BizException("帖子不存在");
         if (!userId.equals(p.getUserId())) throw new BizException("只能删除自己的帖子");
 
-        p.setStatus(0);
+        // 用户删除：单独打标，不再参与“已隐藏日志”统计
+        p.setDeletedFlag(1);
+        p.setStatus(0); // 同时从社区流中去掉
         p.setUpdateTime(LocalDateTime.now());
         postService.updateById(p);
 
         return R.ok(true);
     }
-
     // =========================
     // 详情构建
     // =========================
@@ -309,6 +333,45 @@ public class SocialControllerV2 extends BaseController {
                 .eq(SocialLike::getUserId, userId));
         vo.setLiked(like != null);
         return vo;
+    }
+
+    // =========================
+    // 昵称补全
+    // =========================
+
+    private String loadNickname(Long userId) {
+        if (userId == null) return null;
+        SysUser user = sysUserService.getById(userId);
+        if (user == null) return null;
+        if (StringUtils.hasText(user.getNickname())) return user.getNickname();
+        if (StringUtils.hasText(user.getUsername())) return user.getUsername();
+        return "用户" + userId;
+    }
+
+    private void fillPostNickname(SocialPost post) {
+        if (post == null) return;
+        if (StringUtils.hasText(post.getNickname())) return;
+
+        String nickname = loadNickname(post.getUserId());
+        post.setNickname(nickname);
+
+        try {
+            postService.updateById(post);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void fillCommentNickname(SocialComment comment) {
+        if (comment == null) return;
+        if (StringUtils.hasText(comment.getNickname())) return;
+
+        String nickname = loadNickname(comment.getUserId());
+        comment.setNickname(nickname);
+
+        try {
+            commentService.updateById(comment);
+        } catch (Exception ignored) {
+        }
     }
 
     // =========================
@@ -331,10 +394,8 @@ public class SocialControllerV2 extends BaseController {
         pr.setCreateTime(LocalDateTime.now());
         pointRecordService.save(pr);
 
-        // ✅ 刷新积分榜
         pointsLeaderboardService.incrPoints(userId, points);
 
-        // ✅ 触发勋章：积分达标（从Redis读总分，读不到就跳过）
         Integer total = readTotalPointsFromRedis(userId);
         if (total != null) {
             achievementService.onPointsChanged(userId, total);
@@ -352,7 +413,7 @@ public class SocialControllerV2 extends BaseController {
     }
 
     // =========================
-    // DTO/VO
+    // DTO / VO
     // =========================
 
     public static class CreatePostDTO {
@@ -393,5 +454,47 @@ public class SocialControllerV2 extends BaseController {
 
         public boolean isLiked() { return liked; }
         public void setLiked(boolean liked) { this.liked = liked; }
+    }
+    @PostMapping("/post/updateRejected")
+    @Transactional(rollbackFor = Exception.class)
+    public R<Boolean> updateRejectedPost(@RequestBody UpdateRejectedPostDTO dto, HttpServletRequest request) {
+        Long userId = getUserId(request);
+        if (userId == null) throw new BizException("未登录");
+        if (dto == null || dto.getPostId() == null) throw new BizException("postId不能为空");
+        if (!StringUtils.hasText(dto.getContent())) throw new BizException("content不能为空");
+
+        SocialPost post = postService.getById(dto.getPostId());
+        if (post == null) throw new BizException("帖子不存在");
+        if (!userId.equals(post.getUserId())) throw new BizException("只能修改自己的帖子");
+
+        // 只允许修改“已驳回”的帖子
+        if (post.getStatus() == null || post.getStatus() != 3) {
+            throw new BizException("当前状态不允许修改后重新发布");
+        }
+
+        post.setContent(dto.getContent());
+        post.setImagesJson(dto.getImagesJson());
+        post.setStatus(2); // 改回待审核
+        post.setUpdateTime(LocalDateTime.now());
+
+        // 如果你后面给 social_post 增加了 audit_remark / reject_reason 字段，
+        // 这里顺手清空即可。当前你给我的 SQL 里 social_post 还没有这个字段。:contentReference[oaicite:2]{index=2}
+
+        postService.updateById(post);
+        return R.ok(true);
+    }
+    public static class UpdateRejectedPostDTO {
+        private Long postId;
+        private String content;
+        private String imagesJson;
+
+        public Long getPostId() { return postId; }
+        public void setPostId(Long postId) { this.postId = postId; }
+
+        public String getContent() { return content; }
+        public void setContent(String content) { this.content = content; }
+
+        public String getImagesJson() { return imagesJson; }
+        public void setImagesJson(String imagesJson) { this.imagesJson = imagesJson; }
     }
 }

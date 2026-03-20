@@ -17,10 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 社交查询V2（联表查询：日志-用户-评论）
- * ✅ 给小程序/前端用：一次拿到帖子作者信息、统计信息、likedByMe
+ * 社交查询V2
  */
 @RestController
 @RequestMapping("/api/social/query/v2")
@@ -39,8 +40,7 @@ public class SocialQueryControllerV2 extends BaseController {
     }
 
     /**
-     * ✅ 帖子分页（联表：social_post + sys_user + like/comment统计 + likedByMe）
-     * 只返回审核通过 status=1（mapper里已限制）
+     * 帖子分页（社区流）
      */
     @GetMapping("/post/page")
     public R<IPage<SocialPostVO>> postPage(@RequestParam(defaultValue = "1") long pageNum,
@@ -48,7 +48,6 @@ public class SocialQueryControllerV2 extends BaseController {
                                            @RequestParam(required = false) String keyword,
                                            HttpServletRequest request) {
 
-        // 未登录也能浏览：likedByMe 默认 0
         Long userId = null;
         try {
             userId = getUserId(request);
@@ -59,7 +58,7 @@ public class SocialQueryControllerV2 extends BaseController {
     }
 
     /**
-     * ✅ 评论分页（联表：social_comment + sys_user）
+     * 评论分页
      */
     @GetMapping("/comment/page")
     public R<IPage<SocialCommentVO>> commentPage(@RequestParam Long postId,
@@ -71,10 +70,8 @@ public class SocialQueryControllerV2 extends BaseController {
     }
 
     /**
-     * ✅ 我的帖子分页（用于展示审核流：待审/驳回/通过/隐藏都能看到）
-     * status 不传=全部；传 1/2/3/0 按状态过滤
-     *
-     * GET /api/social/query/v2/post/my/page?pageNum=1&pageSize=10&status=2
+     * 我的帖子分页
+     * 默认排除“用户已删除”的帖子
      */
     @GetMapping("/post/my/page")
     public R<Page<SocialPost>> myPostPage(@RequestParam(defaultValue = "1") long pageNum,
@@ -88,12 +85,56 @@ public class SocialQueryControllerV2 extends BaseController {
         Page<SocialPost> page = new Page<>(pageNum, pageSize);
 
         LambdaQueryWrapper<SocialPost> qw = new LambdaQueryWrapper<>();
-        qw.eq(SocialPost::getUserId, userId);
+        qw.eq(SocialPost::getUserId, userId)
+                .eq(SocialPost::getDeletedFlag, 0);
+
         if (status != null) {
             qw.eq(SocialPost::getStatus, status);
         }
+
         qw.orderByDesc(SocialPost::getCreateTime);
 
         return R.ok(postService.page(page, qw));
+    }
+
+    /**
+     * 我的动态统计
+     * 首页/我的日志页统计专用
+     */
+    @GetMapping("/post/my/stats")
+    public R<Map<String, Long>> myPostStats(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        if (userId == null) throw new BizException("未登录");
+
+        long pendingCount = postService.count(new LambdaQueryWrapper<SocialPost>()
+                .eq(SocialPost::getUserId, userId)
+                .eq(SocialPost::getDeletedFlag, 0)
+                .eq(SocialPost::getStatus, 2));
+
+        long publishedCount = postService.count(new LambdaQueryWrapper<SocialPost>()
+                .eq(SocialPost::getUserId, userId)
+                .eq(SocialPost::getDeletedFlag, 0)
+                .eq(SocialPost::getStatus, 1));
+
+        long rejectedCount = postService.count(new LambdaQueryWrapper<SocialPost>()
+                .eq(SocialPost::getUserId, userId)
+                .eq(SocialPost::getDeletedFlag, 0)
+                .eq(SocialPost::getStatus, 3));
+
+        long hiddenCount = postService.count(new LambdaQueryWrapper<SocialPost>()
+                .eq(SocialPost::getUserId, userId)
+                .eq(SocialPost::getDeletedFlag, 0)
+                .eq(SocialPost::getStatus, 0));
+
+        long totalCount = pendingCount + publishedCount + rejectedCount + hiddenCount;
+
+        Map<String, Long> res = new HashMap<>();
+        res.put("pendingCount", pendingCount);
+        res.put("publishedCount", publishedCount);
+        res.put("rejectedCount", rejectedCount);
+        res.put("hiddenCount", hiddenCount);
+        res.put("totalCount", totalCount);
+
+        return R.ok(res);
     }
 }

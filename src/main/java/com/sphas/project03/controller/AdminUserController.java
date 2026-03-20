@@ -30,11 +30,7 @@ public class AdminUserController extends BaseController {
      */
     @PostMapping("/create-admin")
     public R<Long> createAdmin(@RequestBody @Valid CreateAdminDTO dto, HttpServletRequest request) {
-
-        // ✅ 必须ADMIN
         requireAdmin(request);
-
-        // ✅ 新增 phone 参数
         Long id = authService.createAdmin(
                 dto.getUsername(),
                 dto.getPassword(),
@@ -44,6 +40,24 @@ public class AdminUserController extends BaseController {
         return R.ok(id);
     }
 
+    /**
+     * 管理员创建 AI 健康顾问
+     */
+    @PostMapping("/create-ai-advisor")
+    public R<Long> createAiAdvisor(@RequestBody @Valid CreateAdminDTO dto, HttpServletRequest request) {
+        requireAdmin(request);
+        Long id = authService.createAiAdvisor(
+                dto.getUsername(),
+                dto.getPassword(),
+                dto.getNickname(),
+                dto.getPhone()
+        );
+        return R.ok(id);
+    }
+
+    /**
+     * 最近创建的管理员
+     */
     @GetMapping("/recent")
     public R<List<SysUser>> recentAdmins(@RequestParam(defaultValue = "10") Integer limit,
                                          HttpServletRequest request) {
@@ -51,4 +65,13 @@ public class AdminUserController extends BaseController {
         return R.ok(authService.recentAdmins(limit));
     }
 
+    /**
+     * 最近创建的 AI 健康顾问
+     */
+    @GetMapping("/recent-ai-advisors")
+    public R<List<SysUser>> recentAiAdvisors(@RequestParam(defaultValue = "10") Integer limit,
+                                             HttpServletRequest request) {
+        requireAdmin(request);
+        return R.ok(authService.recentAiAdvisors(limit));
+    }
 }
