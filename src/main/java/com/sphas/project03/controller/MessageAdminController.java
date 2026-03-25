@@ -14,13 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 管理端：消息提醒查看
+ * 这里统一按 sys_message 查，不再和 notification 混用
  */
 @RestController
 @RequestMapping("/api/message/admin")
@@ -37,6 +38,7 @@ public class MessageAdminController extends BaseController {
 
     /**
      * 消息分页
+     * 这里把筛选条件尽量下推到数据库层，避免先分页再过滤导致总数不准
      */
     @GetMapping("/page")
     public R<Page<Map<String, Object>>> page(@RequestParam(defaultValue = "1") long pageNum,
@@ -47,27 +49,122 @@ public class MessageAdminController extends BaseController {
                                              HttpServletRequest request) {
         requireAdmin(request);
 
-        Page<SysMessage> rawPage = sysMessageService.page(
-                new Page<>(pageNum, pageSize),
-                new LambdaQueryWrapper<SysMessage>()
-                        .orderByDesc(SysMessage::getCreateTime)
-                        .orderByDesc(SysMessage::getId)
-        );
+        LambdaQueryWrapper<SysMessage> qw = new LambdaQueryWrapper<>();
 
-        List<Map<String, Object>> records = rawPage.getRecords().stream()
-                .map(this::buildRow)
-                .filter(row -> matchKeyword(row, keyword) && matchType(row, type) && matchRead(row, isRead))
-                .collect(Collectors.toList());
+        // 类型筛选
+        if (StringUtils.hasText(type)) {
+            qw.eq(SysMessage::getType, type.trim());
+        }
 
-        Page<Map<String, Object>> res = new Page<>(pageNum, pageSize);
-        res.setCurrent(rawPage.getCurrent());
-        res.setSize(rawPage.getSize());
-        res.setTotal(rawPage.getTotal());
-        res.setRecords(records);
+        // 已读状态筛选
+        if (isRead != null) {
+            qw.eq(SysMessage::getIsRead, isRead);
+        }
+
+        // 关键字筛选
+        // 支持：用户名、昵称、手机号、标题、内容、业务ID
+        if (StringUtils.hasText(keyword)) {
+            String kw = keyword.trim();
+
+            List<Long> matchedUserIds = findMatchedUserIds(kw);
+
+            qw.and(w -> {
+                boolean hasAny = false;
+
+                if (!matchedUserIds.isEmpty()) {
+                    w.in(SysMessage::getUserId, matchedUserIds);
+                    hasAny = true;
+                }
+
+                if (isNumeric(kw)) {
+                    if (hasAny) {
+                        w.or();
+                    }
+                    Long num = Long.valueOf(kw);
+                    w.eq(SysMessage::getBizId, num).or().eq(SysMessage::getId, num);
+                    hasAny = true;
+                }
+
+                if (hasAny) {
+                    w.or();
+                }
+
+                w.like(SysMessage::getTitle, kw)
+                        .or()
+                        .like(SysMessage::getContent, kw);
+            });
+        }
+
+        qw.orderByDesc(SysMessage::getCreateTime)
+                .orderByDesc(SysMessage::getId);
+
+        Page<SysMessage> rawPage = sysMessageService.page(new Page<>(pageNum, pageSize), qw);
+
+        // 批量查用户，避免一条条查
+        Map<Long, SysUser> userMap = buildUserMap(rawPage.getRecords());
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (SysMessage msg : rawPage.getRecords()) {
+            rows.add(buildRow(msg, userMap.get(msg.getUserId())));
+        }
+
+        Page<Map<String, Object>> res = new Page<>(rawPage.getCurrent(), rawPage.getSize(), rawPage.getTotal());
+        res.setRecords(rows);
         return R.ok(res);
     }
 
-    private Map<String, Object> buildRow(SysMessage msg) {
+    /**
+     * 根据关键字找命中的用户
+     */
+    private List<Long> findMatchedUserIds(String kw) {
+        LambdaQueryWrapper<SysUser> userQw = new LambdaQueryWrapper<SysUser>()
+                .select(SysUser::getId)
+                .and(w -> w.like(SysUser::getUsername, kw)
+                        .or()
+                        .like(SysUser::getNickname, kw)
+                        .or()
+                        .like(SysUser::getPhone, kw));
+
+        List<SysUser> users = sysUserService.list(userQw);
+        List<Long> ids = new ArrayList<>();
+        for (SysUser user : users) {
+            if (user != null && user.getId() != null) {
+                ids.add(user.getId());
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * 批量构建用户映射，避免 N+1 查询
+     */
+    private Map<Long, SysUser> buildUserMap(List<SysMessage> msgs) {
+        Map<Long, SysUser> map = new HashMap<>();
+        if (msgs == null || msgs.isEmpty()) {
+            return map;
+        }
+
+        List<Long> userIds = new ArrayList<>();
+        for (SysMessage msg : msgs) {
+            if (msg != null && msg.getUserId() != null && !userIds.contains(msg.getUserId())) {
+                userIds.add(msg.getUserId());
+            }
+        }
+
+        if (userIds.isEmpty()) {
+            return map;
+        }
+
+        List<SysUser> users = sysUserService.listByIds(userIds);
+        for (SysUser user : users) {
+            if (user != null && user.getId() != null) {
+                map.put(user.getId(), user);
+            }
+        }
+        return map;
+    }
+
+    private Map<String, Object> buildRow(SysMessage msg, SysUser user) {
         Map<String, Object> row = new HashMap<>();
         row.put("id", msg.getId());
         row.put("userId", msg.getUserId());
@@ -79,7 +176,6 @@ public class MessageAdminController extends BaseController {
         row.put("createTime", msg.getCreateTime());
         row.put("readTime", msg.getReadTime());
 
-        SysUser user = msg.getUserId() == null ? null : sysUserService.getById(msg.getUserId());
         row.put("username", user == null ? "" : user.getUsername());
         row.put("nickname", user == null ? "" : user.getNickname());
         row.put("phone", user == null ? "" : user.getPhone());
@@ -87,38 +183,15 @@ public class MessageAdminController extends BaseController {
         return row;
     }
 
-    private boolean matchKeyword(Map<String, Object> row, String keyword) {
-        if (!StringUtils.hasText(keyword)) {
-            return true;
-        }
-        String kw = keyword.trim();
-        String username = String.valueOf(row.getOrDefault("username", ""));
-        String nickname = String.valueOf(row.getOrDefault("nickname", ""));
-        String title = String.valueOf(row.getOrDefault("title", ""));
-        String content = String.valueOf(row.getOrDefault("content", ""));
-        String bizId = String.valueOf(row.getOrDefault("bizId", ""));
-        return username.contains(kw)
-                || nickname.contains(kw)
-                || title.contains(kw)
-                || content.contains(kw)
-                || bizId.contains(kw);
-    }
-
-    private boolean matchType(Map<String, Object> row, String type) {
-        if (!StringUtils.hasText(type)) {
-            return true;
-        }
-        return type.trim().equals(String.valueOf(row.get("type")));
-    }
-
-    private boolean matchRead(Map<String, Object> row, Integer isRead) {
-        if (isRead == null) {
-            return true;
-        }
-        Object v = row.get("isRead");
-        if (v == null) {
+    private boolean isNumeric(String text) {
+        if (!StringUtils.hasText(text)) {
             return false;
         }
-        return String.valueOf(isRead).equals(String.valueOf(v));
+        for (int i = 0; i < text.length(); i++) {
+            if (!Character.isDigit(text.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

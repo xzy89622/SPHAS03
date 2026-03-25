@@ -3,12 +3,13 @@ package com.sphas.project03.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
- * ✅ 一体化 8080 的 Security 配置（兼容你当前项目版本）
- * 放行：前端页面 + 静态资源 + 登录接口
+ * Security 配置
+ * 这里先按你当前 Spring Boot 2.7 的版本来写
+ * 先保证能编译、能启动，再慢慢补完整
  */
 @Configuration
 public class SecurityConfig {
@@ -17,28 +18,46 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // 关闭 csrf（前后端分离/一体化常用）
-                .csrf(csrf -> csrf.disable())
+                // 前后端分离，先关掉 csrf
+                .csrf().disable()
 
-                // 不使用默认登录页
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
+                // 不用表单登录
+                .formLogin().disable()
 
-                .authorizeHttpRequests(auth -> auth
-                        // ✅ 放行前端页面与静态资源
-                        .requestMatchers(
-                                new AntPathRequestMatcher("/"),
-                                new AntPathRequestMatcher("/index.html"),
-                                new AntPathRequestMatcher("/assets/**"),
-                                new AntPathRequestMatcher("/favicon.ico")
-                        ).permitAll()
+                // 不用 httpBasic
+                .httpBasic().disable()
 
-                        // ✅ 放行登录/注册接口
-                        .requestMatchers(new AntPathRequestMatcher("/api/auth/**")).permitAll()
+                // JWT 项目改成无状态
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
 
-                        // 其他接口：你如果 JWT 在拦截器里做，这里可以先放行
-                        .anyRequest().permitAll()
-                );
+                .authorizeRequests()
+
+                // 首页和静态资源
+                .antMatchers(
+                        "/",
+                        "/index.html",
+                        "/assets/**",
+                        "/favicon.ico",
+                        "/upload/**",
+                        "/ping"
+                ).permitAll()
+
+                // 登录注册
+                .antMatchers("/api/auth/**").permitAll()
+
+                // Swagger / OpenAPI
+                .antMatchers(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/doc.html"
+                ).permitAll()
+
+                // 其他接口先放行
+                // 这里先不强制 authenticated
+                // 因为你现在真正的 token 校验还是靠 JwtInterceptor
+                .anyRequest().permitAll();
 
         return http.build();
     }

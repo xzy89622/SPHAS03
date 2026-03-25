@@ -46,3 +46,12 @@ app:
 ai:
   python:
     baseUrl: http://127.0.0.1:5001
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha

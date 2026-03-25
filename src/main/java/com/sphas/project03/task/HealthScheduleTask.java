@@ -3,12 +3,15 @@ package com.sphas.project03.task;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sphas.project03.common.HealthConstants;
+import com.sphas.project03.controller.dto.MonthlyReportDTO;
+import com.sphas.project03.controller.dto.WeeklyReportDTO;
 import com.sphas.project03.entity.HealthRecord;
 import com.sphas.project03.entity.SysUser;
 import com.sphas.project03.entity.WeeklyReportRecord;
 import com.sphas.project03.mapper.HealthRecordMapper;
 import com.sphas.project03.mapper.SysUserMapper;
 import com.sphas.project03.mapper.WeeklyReportMapper;
+import com.sphas.project03.service.HealthReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,9 +24,10 @@ import java.util.*;
 
 /**
  * 健康报告定时任务
- * 这版做两件事：
+ * 这版做三件事：
  * 1. 自动生成系统汇总周报 / 月报
  * 2. 自动生成每个普通用户自己的周报 / 月报历史
+ * 3. 和手动查看报告保持同一套历史落库结构
  */
 @Slf4j
 @Component
@@ -33,6 +37,7 @@ public class HealthScheduleTask {
     private final SysUserMapper sysUserMapper;
     private final HealthRecordMapper healthRecordMapper;
     private final WeeklyReportMapper weeklyReportMapper;
+    private final HealthReportService healthReportService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -45,7 +50,9 @@ public class HealthScheduleTask {
         LocalDate endDate = today.minusDays(1);
         LocalDate startDate = endDate.with(DayOfWeek.MONDAY);
 
-        generateAllReports("WEEK", startDate, endDate);
+        saveSystemWeeklyReport(startDate, endDate);
+        saveAllUserWeeklyReports(startDate, endDate);
+
         log.info("周报自动生成完成：{} ~ {}", startDate, endDate);
     }
 
@@ -58,68 +65,68 @@ public class HealthScheduleTask {
         LocalDate endDate = firstDayOfThisMonth.minusDays(1);
         LocalDate startDate = endDate.withDayOfMonth(1);
 
-        generateAllReports("MONTH", startDate, endDate);
+        saveSystemMonthlyReport(startDate, endDate);
+        saveAllUserMonthlyReports(startDate, endDate);
+
         log.info("月报自动生成完成：{} ~ {}", startDate, endDate);
     }
 
     /**
-     * 生成整套报告
+     * 系统周报
      */
-    private void generateAllReports(String reportType, LocalDate startDate, LocalDate endDate) {
-        saveSystemReport(reportType, startDate, endDate);
-        saveAllUserReports(reportType, startDate, endDate);
-    }
-
-    /**
-     * 保存系统汇总报告
-     */
-    private void saveSystemReport(String reportType, LocalDate startDate, LocalDate endDate) {
-        List<HealthRecord> recordList = healthRecordMapper.selectList(
+    private void saveSystemWeeklyReport(LocalDate startDate, LocalDate endDate) {
+        List<HealthRecord> list = healthRecordMapper.selectList(
                 new LambdaQueryWrapper<HealthRecord>()
                         .ge(HealthRecord::getRecordDate, startDate)
                         .le(HealthRecord::getRecordDate, endDate)
                         .orderByAsc(HealthRecord::getRecordDate)
         );
 
-        Map<String, Object> metrics = buildSystemMetrics(reportType, recordList, startDate, endDate);
-        Map<String, Object> detail = buildSystemDetail(reportType, metrics);
+        Map<String, Object> metrics = buildSystemMetrics("WEEK", list, startDate, endDate);
+        Map<String, Object> detail = buildSystemDetail("WEEK", metrics);
 
-        WeeklyReportRecord db = weeklyReportMapper.selectOne(
-                new LambdaQueryWrapper<WeeklyReportRecord>()
-                        .eq(WeeklyReportRecord::getUserId, 0L)
-                        .eq(WeeklyReportRecord::getReportType, reportType)
-                        .eq(WeeklyReportRecord::getWeekStart, startDate)
-                        .eq(WeeklyReportRecord::getWeekEnd, endDate)
-                        .last("limit 1")
+        saveReportRecord(
+                0L,
+                "WEEK",
+                startDate,
+                endDate,
+                "[WEEK] " + startDate + " ~ " + endDate + " 周健康总结报告",
+                String.valueOf(detail.getOrDefault("summary", "")),
+                metrics,
+                detail
         );
-
-        LocalDateTime now = LocalDateTime.now();
-        if (db == null) {
-            db = new WeeklyReportRecord();
-            db.setCreatedAt(now);
-        }
-
-        db.setUserId(0L);
-        db.setReportType(reportType);
-        db.setWeekStart(startDate);
-        db.setWeekEnd(endDate);
-        db.setTitle(buildSystemTitle(reportType, startDate, endDate));
-        db.setSummary(String.valueOf(detail.getOrDefault("summary", "")));
-        db.setMetricsJson(writeJson(metrics));
-        db.setTableJson(writeJson(detail));
-        db.setUpdatedAt(now);
-
-        if (db.getId() == null) {
-            weeklyReportMapper.insert(db);
-        } else {
-            weeklyReportMapper.updateById(db);
-        }
     }
 
     /**
-     * 给所有普通用户生成个人报告
+     * 系统月报
      */
-    private void saveAllUserReports(String reportType, LocalDate startDate, LocalDate endDate) {
+    private void saveSystemMonthlyReport(LocalDate startDate, LocalDate endDate) {
+        List<HealthRecord> list = healthRecordMapper.selectList(
+                new LambdaQueryWrapper<HealthRecord>()
+                        .ge(HealthRecord::getRecordDate, startDate)
+                        .le(HealthRecord::getRecordDate, endDate)
+                        .orderByAsc(HealthRecord::getRecordDate)
+        );
+
+        Map<String, Object> metrics = buildSystemMetrics("MONTH", list, startDate, endDate);
+        Map<String, Object> detail = buildSystemDetail("MONTH", metrics);
+
+        saveReportRecord(
+                0L,
+                "MONTH",
+                startDate,
+                endDate,
+                "[MONTH] " + startDate + " ~ " + endDate + " 月健康总结报告",
+                String.valueOf(detail.getOrDefault("summary", "")),
+                metrics,
+                detail
+        );
+    }
+
+    /**
+     * 所有用户周报
+     */
+    private void saveAllUserWeeklyReports(LocalDate startDate, LocalDate endDate) {
         List<SysUser> userList = sysUserMapper.selectList(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getRole, "USER")
@@ -128,35 +135,80 @@ public class HealthScheduleTask {
 
         for (SysUser user : userList) {
             try {
-                saveUserReport(user, reportType, startDate, endDate);
+                WeeklyReportDTO dto = healthReportService.weekly(user.getId());
+                if (dto == null || dto.getFrom() == null || dto.getTo() == null) {
+                    continue;
+                }
+
+                Map<String, Object> metrics = buildWeeklyMetrics(dto);
+                Map<String, Object> detail = buildWeeklyDetail(dto);
+
+                saveReportRecord(
+                        user.getId(),
+                        "WEEK",
+                        LocalDate.parse(dto.getFrom()),
+                        LocalDate.parse(dto.getTo()),
+                        "[WEEK] " + dto.getFrom() + " ~ " + dto.getTo() + " 我的周健康报告",
+                        dto.getSummary(),
+                        metrics,
+                        detail
+                );
             } catch (Exception e) {
-                log.error("生成用户个人报告失败，userId={}", user.getId(), e);
+                log.error("生成用户周报失败，userId={}", user.getId(), e);
             }
         }
     }
 
     /**
-     * 保存单个用户个人报告
+     * 所有用户月报
      */
-    private void saveUserReport(SysUser user, String reportType, LocalDate startDate, LocalDate endDate) {
-        List<HealthRecord> list = healthRecordMapper.selectList(
-                new LambdaQueryWrapper<HealthRecord>()
-                        .eq(HealthRecord::getUserId, user.getId())
-                        .ge(HealthRecord::getRecordDate, startDate)
-                        .le(HealthRecord::getRecordDate, endDate)
-                        .orderByAsc(HealthRecord::getRecordDate)
+    private void saveAllUserMonthlyReports(LocalDate startDate, LocalDate endDate) {
+        List<SysUser> userList = sysUserMapper.selectList(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getRole, "USER")
+                        .eq(SysUser::getStatus, 1)
         );
 
-        if (list.isEmpty()) {
-            return;
+        for (SysUser user : userList) {
+            try {
+                MonthlyReportDTO dto = healthReportService.monthly(user.getId());
+                if (dto == null || dto.getFrom() == null || dto.getTo() == null) {
+                    continue;
+                }
+
+                Map<String, Object> metrics = buildMonthlyMetrics(dto);
+                Map<String, Object> detail = buildMonthlyDetail(dto);
+
+                saveReportRecord(
+                        user.getId(),
+                        "MONTH",
+                        LocalDate.parse(dto.getFrom()),
+                        LocalDate.parse(dto.getTo()),
+                        "[MONTH] " + dto.getFrom() + " ~ " + dto.getTo() + " 我的月健康报告",
+                        dto.getSummary(),
+                        metrics,
+                        detail
+                );
+            } catch (Exception e) {
+                log.error("生成用户月报失败，userId={}", user.getId(), e);
+            }
         }
+    }
 
-        Map<String, Object> metrics = buildUserMetrics(reportType, user, list, startDate, endDate);
-        Map<String, Object> detail = buildUserDetail(reportType, metrics);
-
+    /**
+     * 统一保存历史记录
+     */
+    private void saveReportRecord(Long userId,
+                                  String reportType,
+                                  LocalDate startDate,
+                                  LocalDate endDate,
+                                  String title,
+                                  String summary,
+                                  Map<String, Object> metrics,
+                                  Map<String, Object> detail) {
         WeeklyReportRecord db = weeklyReportMapper.selectOne(
                 new LambdaQueryWrapper<WeeklyReportRecord>()
-                        .eq(WeeklyReportRecord::getUserId, user.getId())
+                        .eq(WeeklyReportRecord::getUserId, userId)
                         .eq(WeeklyReportRecord::getReportType, reportType)
                         .eq(WeeklyReportRecord::getWeekStart, startDate)
                         .eq(WeeklyReportRecord::getWeekEnd, endDate)
@@ -169,12 +221,12 @@ public class HealthScheduleTask {
             db.setCreatedAt(now);
         }
 
-        db.setUserId(user.getId());
+        db.setUserId(userId);
         db.setReportType(reportType);
         db.setWeekStart(startDate);
         db.setWeekEnd(endDate);
-        db.setTitle(buildUserTitle(reportType, startDate, endDate));
-        db.setSummary(String.valueOf(detail.getOrDefault("summary", "")));
+        db.setTitle(title);
+        db.setSummary(summary);
         db.setMetricsJson(writeJson(metrics));
         db.setTableJson(writeJson(detail));
         db.setUpdatedAt(now);
@@ -184,20 +236,6 @@ public class HealthScheduleTask {
         } else {
             weeklyReportMapper.updateById(db);
         }
-    }
-
-    private String buildSystemTitle(String reportType, LocalDate startDate, LocalDate endDate) {
-        if ("MONTH".equals(reportType)) {
-            return "[MONTH] " + startDate + " ~ " + endDate + " 月健康总结报告";
-        }
-        return "[WEEK] " + startDate + " ~ " + endDate + " 周健康总结报告";
-    }
-
-    private String buildUserTitle(String reportType, LocalDate startDate, LocalDate endDate) {
-        if ("MONTH".equals(reportType)) {
-            return "[MONTH] " + startDate + " ~ " + endDate + " 我的月健康报告";
-        }
-        return "[WEEK] " + startDate + " ~ " + endDate + " 我的周健康报告";
     }
 
     /**
@@ -227,41 +265,6 @@ public class HealthScheduleTask {
         metrics.put("avgSleepHours", avgSleepHours(list));
         metrics.put("weightTrend", weightTrend(list));
         metrics.put("bpRiskCount", bpRiskCount(list));
-
-        return metrics;
-    }
-
-    /**
-     * 个人报告指标
-     */
-    private Map<String, Object> buildUserMetrics(String reportType,
-                                                 SysUser user,
-                                                 List<HealthRecord> list,
-                                                 LocalDate startDate,
-                                                 LocalDate endDate) {
-        Map<String, Object> metrics = new HashMap<>();
-
-        Double avgWeight = avgWeight(list);
-        Double avgSleep = avgSleepHours(list);
-        Integer avgSteps = avgSteps(list);
-        Integer bpRiskCount = bpRiskCount(list);
-        String weightTrend = weightTrend(list);
-        Double latestBmi = latestBmi(list);
-
-        metrics.put("reportType", reportType);
-        metrics.put("scope", "USER");
-        metrics.put("userId", user.getId());
-        metrics.put("nickname", user.getNickname());
-        metrics.put("from", startDate.toString());
-        metrics.put("to", endDate.toString());
-        metrics.put("recordCount", list.size());
-        metrics.put("avgWeight", avgWeight);
-        metrics.put("avgSteps", avgSteps);
-        metrics.put("avgSleepHours", avgSleep);
-        metrics.put("weightTrend", weightTrend);
-        metrics.put("bpRiskCount", bpRiskCount);
-        metrics.put("latestBmi", latestBmi);
-        metrics.put("riskLevel", userRiskLevel(latestBmi, avgSleep, avgSteps, bpRiskCount));
 
         return metrics;
     }
@@ -334,105 +337,90 @@ public class HealthScheduleTask {
         return detail;
     }
 
-    /**
-     * 个人报告详情
-     */
-    private Map<String, Object> buildUserDetail(String reportType, Map<String, Object> metrics) {
-        Map<String, Object> detail = new HashMap<>();
-        List<String> riskTips = new ArrayList<>();
-        List<String> suggestions = new ArrayList<>();
+    private Map<String, Object> buildWeeklyMetrics(WeeklyReportDTO dto) {
+        Map<String, Object> metrics = new LinkedHashMap<>();
+        metrics.put("reportType", "WEEK");
+        metrics.put("scope", "USER");
+        metrics.put("from", dto.getFrom());
+        metrics.put("to", dto.getTo());
+        metrics.put("recordCount", dto.getDays());
+        metrics.put("avgWeight", dto.getAvgWeight());
+        metrics.put("avgSteps", dto.getAvgSteps());
+        metrics.put("avgSleepHours", dto.getAvgSleepHours());
+        metrics.put("weightTrend", dto.getWeightTrend());
+        metrics.put("bpRiskCount", Boolean.TRUE.equals(dto.getBpRisk()) ? 1 : 0);
+        metrics.put("riskLevel", calcRiskLevel(dto.getBpRisk(), dto.getAvgSteps(), dto.getAvgSleepHours(), dto.getWeightTrend()));
+        return metrics;
+    }
 
-        Integer recordCount = toInt(metrics.get("recordCount"));
-        Double avgWeight = toDouble(metrics.get("avgWeight"));
-        Integer avgSteps = toInt(metrics.get("avgSteps"));
-        Double avgSleepHours = toDouble(metrics.get("avgSleepHours"));
-        String weightTrend = String.valueOf(metrics.getOrDefault("weightTrend", "数据不足"));
-        Integer bpRiskCount = toInt(metrics.get("bpRiskCount"));
-        Double latestBmi = toDouble(metrics.get("latestBmi"));
-        String riskLevel = String.valueOf(metrics.getOrDefault("riskLevel", "LOW"));
+    private Map<String, Object> buildMonthlyMetrics(MonthlyReportDTO dto) {
+        Map<String, Object> metrics = new LinkedHashMap<>();
+        metrics.put("reportType", "MONTH");
+        metrics.put("scope", "USER");
+        metrics.put("from", dto.getFrom());
+        metrics.put("to", dto.getTo());
+        metrics.put("recordCount", dto.getDays());
+        metrics.put("avgWeight", dto.getAvgWeight());
+        metrics.put("avgSteps", dto.getAvgSteps());
+        metrics.put("avgSleepHours", dto.getAvgSleepHours());
+        metrics.put("weightTrend", dto.getWeightTrend());
+        metrics.put("bpRiskCount", Boolean.TRUE.equals(dto.getBpRisk()) ? 1 : 0);
+        metrics.put("riskLevel", calcRiskLevel(dto.getBpRisk(), dto.getAvgSteps(), dto.getAvgSleepHours(), dto.getWeightTrend()));
+        return metrics;
+    }
 
-        if (recordCount == 0) {
-            riskTips.add("当前周期暂无健康记录，报告参考性较低。");
-            suggestions.add("建议坚持每日记录健康数据。");
-        }
-
-        if (latestBmi != null) {
-            if (latestBmi >= 24) {
-                riskTips.add("当前 BMI 偏高，需要关注体重控制。");
-                suggestions.add("建议减少高糖高脂食物摄入，保持规律运动。");
-            } else if (latestBmi > 0 && latestBmi < 18.5) {
-                riskTips.add("当前 BMI 偏低，需要注意营养摄入。");
-                suggestions.add("建议适当增加优质蛋白和主食摄入。");
-            }
-        }
-
-        if (bpRiskCount > 0) {
-            riskTips.add("本周期出现血压偏高记录，需要持续复测。");
-            suggestions.add("建议清淡饮食，减少熬夜，必要时及时就医。");
-        }
-
-        int stepLine = "WEEK".equals(reportType) ? 8000 : 7000;
-        if (avgSteps > 0 && avgSteps < stepLine) {
-            riskTips.add("运动量偏少，平均步数未达到推荐水平。");
-            suggestions.add("建议增加日常步行和轻运动，逐步把步数提升到 " + stepLine + " 步以上。");
-        }
-
-        if (avgSleepHours != null && avgSleepHours > 0 && avgSleepHours < 7) {
-            riskTips.add("睡眠时长偏短，存在作息不规律风险。");
-            suggestions.add("建议尽量在 23 点前入睡，保证 7 小时以上睡眠。");
-        }
-
-        if ("上升".equals(weightTrend)) {
-            riskTips.add("体重呈上升趋势，需要关注近期饮食和运动执行情况。");
-            suggestions.add("建议配合系统推荐计划持续干预。");
-        } else if ("下降".equals(weightTrend)) {
-            suggestions.add("体重整体呈下降趋势，可以继续保持当前健康管理节奏。");
-        }
-
-        if (riskTips.isEmpty()) {
-            riskTips.add("本周期整体状态较平稳，没有明显异常波动。");
-        }
-
-        if (suggestions.isEmpty()) {
-            suggestions.add("建议继续保持当前生活习惯，定期记录健康数据。");
-        }
-
-        String summary = "本周期共记录 " + recordCount + " 次，平均体重 "
-                + formatDouble(avgWeight) + "kg，平均步数 "
-                + avgSteps + " 步，平均睡眠 "
-                + formatDouble(avgSleepHours) + " 小时，体重趋势为 "
-                + weightTrend + "，综合风险等级为 " + riskLevel + "。";
-
-        detail.put("summary", summary);
-        detail.put("riskTips", riskTips);
-        detail.put("suggestions", suggestions);
-
+    private Map<String, Object> buildWeeklyDetail(WeeklyReportDTO dto) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("summary", dto.getSummary());
+        detail.put("riskTips", buildRiskTips(dto.getBpRisk(), dto.getWeightTrend(), dto.getAvgSleepHours(), dto.getAvgSteps()));
+        detail.put("suggestions", dto.getSuggestions() == null ? new ArrayList<>() : dto.getSuggestions());
         return detail;
     }
 
-    private Double latestBmi(List<HealthRecord> list) {
-        for (int i = list.size() - 1; i >= 0; i--) {
-            HealthRecord item = list.get(i);
-            if (item.getHeightCm() != null && item.getHeightCm() > 0
-                    && item.getWeightKg() != null && item.getWeightKg() > 0) {
-                double heightMeter = item.getHeightCm() / 100.0;
-                return round2(item.getWeightKg() / (heightMeter * heightMeter));
-            }
-        }
-        return null;
+    private Map<String, Object> buildMonthlyDetail(MonthlyReportDTO dto) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("summary", dto.getSummary());
+        detail.put("riskTips", buildRiskTips(dto.getBpRisk(), dto.getWeightTrend(), dto.getAvgSleepHours(), dto.getAvgSteps()));
+        detail.put("suggestions", dto.getSuggestions() == null ? new ArrayList<>() : dto.getSuggestions());
+        return detail;
     }
 
-    private String userRiskLevel(Double bmi, Double avgSleepHours, Integer avgSteps, Integer bpRiskCount) {
+    private List<String> buildRiskTips(Boolean bpRisk, String weightTrend, Double avgSleepHours, Integer avgSteps) {
+        ArrayList<String> list = new ArrayList<>();
+
+        if (Boolean.TRUE.equals(bpRisk)) {
+            list.add("存在血压偏高风险，需要重点关注。");
+        }
+        if ("上升".equals(weightTrend)) {
+            list.add("体重呈上升趋势，需要关注饮食控制与运动执行。");
+        }
+        if (avgSleepHours != null && avgSleepHours < 7) {
+            list.add("睡眠时长偏短，存在作息不规律风险。");
+        }
+        if (avgSteps != null && avgSteps > 0 && avgSteps < 7000) {
+            list.add("活动量偏低，平均步数未达到推荐水平。");
+        }
+
+        if (list.isEmpty()) {
+            list.add("本周期整体健康趋势平稳，暂未发现明显风险。");
+        }
+
+        return list;
+    }
+
+    private String calcRiskLevel(Boolean bpRisk, Integer avgSteps, Double avgSleepHours, String weightTrend) {
         int score = 0;
 
-        if (bmi != null) {
-            if (bmi >= 28 || bmi < 18.5) {
+        if (Boolean.TRUE.equals(bpRisk)) {
+            score += 2;
+        }
+        if (avgSteps != null && avgSteps > 0) {
+            if (avgSteps < 4000) {
                 score += 2;
-            } else if (bmi >= 24) {
+            } else if (avgSteps < 7000) {
                 score += 1;
             }
         }
-
         if (avgSleepHours != null) {
             if (avgSleepHours < 6) {
                 score += 2;
@@ -440,17 +428,8 @@ public class HealthScheduleTask {
                 score += 1;
             }
         }
-
-        if (avgSteps != null) {
-            if (avgSteps < 4000) {
-                score += 2;
-            } else if (avgSteps < 6000) {
-                score += 1;
-            }
-        }
-
-        if (bpRiskCount != null && bpRiskCount > 0) {
-            score += 2;
+        if ("上升".equals(weightTrend)) {
+            score += 1;
         }
 
         if (score >= 4) {
@@ -542,23 +521,23 @@ public class HealthScheduleTask {
         }
     }
 
-    private Integer toInt(Object v) {
-        if (v == null) {
+    private Integer toInt(Object value) {
+        if (value == null) {
             return 0;
         }
         try {
-            return (int) Math.round(Double.parseDouble(String.valueOf(v)));
+            return (int) Math.round(Double.parseDouble(String.valueOf(value)));
         } catch (Exception e) {
             return 0;
         }
     }
 
-    private Double toDouble(Object v) {
-        if (v == null) {
+    private Double toDouble(Object value) {
+        if (value == null) {
             return null;
         }
         try {
-            return round2(Double.parseDouble(String.valueOf(v)));
+            return round2(Double.parseDouble(String.valueOf(value)));
         } catch (Exception e) {
             return null;
         }
