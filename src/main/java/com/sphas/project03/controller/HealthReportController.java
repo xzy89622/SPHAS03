@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * 健康报告接口（需要登录）
- * 这版顺手把用户当前周报 / 月报同步到历史表
+ * 这里把当前周报 / 月报 和历史报告统一收口
  */
 @RestController
 @RequestMapping("/api/health/report")
@@ -38,6 +38,9 @@ public class HealthReportController extends BaseController {
         this.weeklyReportMapper = weeklyReportMapper;
     }
 
+    /**
+     * 当前周报
+     */
     @GetMapping("/weekly")
     public R<WeeklyReportDTO> weekly(HttpServletRequest request) {
         Long userId = getUserId(request);
@@ -51,6 +54,9 @@ public class HealthReportController extends BaseController {
         return R.ok(dto);
     }
 
+    /**
+     * 当前月报
+     */
     @GetMapping("/monthly")
     public R<MonthlyReportDTO> monthly(HttpServletRequest request) {
         Long userId = getUserId(request);
@@ -64,21 +70,43 @@ public class HealthReportController extends BaseController {
         return R.ok(dto);
     }
 
+    /**
+     * 周报 PDF
+     * 这里也顺手把历史报告落库，避免用户只导出不查看时历史里没有记录
+     */
     @GetMapping("/weekly/pdf")
     public void weeklyPdf(HttpServletRequest request, HttpServletResponse response) throws Exception {
         Long userId = getUserId(request);
-        byte[] pdf = healthReportService.weeklyPdf(userId);
+        if (userId == null) {
+            writeUnauthorized(response);
+            return;
+        }
 
+        WeeklyReportDTO dto = healthReportService.weekly(userId);
+        saveWeeklyHistory(userId, dto);
+
+        byte[] pdf = healthReportService.weeklyPdf(userId);
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=weekly-report.pdf");
         response.getOutputStream().write(pdf);
     }
 
+    /**
+     * 月报 PDF
+     * 这里也顺手把历史报告落库，避免用户只导出不查看时历史里没有记录
+     */
     @GetMapping("/monthly/pdf")
     public void monthlyPdf(HttpServletRequest request, HttpServletResponse response) throws Exception {
         Long userId = getUserId(request);
-        byte[] pdf = healthReportService.monthlyPdf(userId);
+        if (userId == null) {
+            writeUnauthorized(response);
+            return;
+        }
 
+        MonthlyReportDTO dto = healthReportService.monthly(userId);
+        saveMonthlyHistory(userId, dto);
+
+        byte[] pdf = healthReportService.monthlyPdf(userId);
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=monthly-report.pdf");
         response.getOutputStream().write(pdf);
@@ -284,5 +312,11 @@ public class HealthReportController extends BaseController {
         } catch (Exception e) {
             return "{}";
         }
+    }
+
+    private void writeUnauthorized(HttpServletResponse response) throws Exception {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"code\":401,\"msg\":\"未登录\",\"data\":null}");
     }
 }

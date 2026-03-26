@@ -11,10 +11,17 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 /**
  * AI 解读 + 预测
+ * 这里主要做两件事：
+ * 1. 调 Python 服务拿预测结果
+ * 2. Python 不可用时走本地规则降级
  */
 @Service
 public class AiInsightServiceImpl implements AiInsightService {
@@ -60,7 +67,7 @@ public class AiInsightServiceImpl implements AiInsightService {
 
         Map<String, Object> py = aiPythonClient.predict(payload);
         if (py != null && !py.isEmpty()) {
-            return buildPythonResult(py, validHistory, riskScore);
+            return buildPythonOrFallbackResult(py, validHistory, riskScore);
         }
 
         return buildFallbackResult(validHistory, riskScore);
@@ -68,15 +75,28 @@ public class AiInsightServiceImpl implements AiInsightService {
 
     /**
      * 过滤有效历史
+     * 这里把完全没指标的空记录去掉，避免拿去喂给 AI
      */
     private List<HealthMetricRecord> filterValidHistory(List<HealthMetricRecord> history) {
+        List<HealthMetricRecord> list = new ArrayList<>();
         if (history == null || history.isEmpty()) {
-            return new ArrayList<>();
+            return list;
         }
 
-        List<HealthMetricRecord> list = new ArrayList<>();
         for (HealthMetricRecord r : history) {
-            if (r != null) {
+            if (r == null) {
+                continue;
+            }
+
+            boolean hasAnyMetric = r.getWeightKg() != null
+                    || r.getBmi() != null
+                    || r.getSteps() != null
+                    || r.getSleepHours() != null
+                    || r.getSystolic() != null
+                    || r.getDiastolic() != null
+                    || r.getBloodSugar() != null;
+
+            if (hasAnyMetric) {
                 list.add(r);
             }
         }
@@ -106,42 +126,60 @@ public class AiInsightServiceImpl implements AiInsightService {
     }
 
     /**
-     * Python结果转DTO
+     * Python 结果转 DTO
+     * 注意：Python 服务本身也可能返回 FALLBACK
+     * 这里不能只要调通了就一律当成 PYTHON 成功
      */
-    private AiPredictionDTO buildPythonResult(Map<String, Object> py,
-                                              List<HealthMetricRecord> history,
-                                              int currentRiskScore) {
+    private AiPredictionDTO buildPythonOrFallbackResult(Map<String, Object> py,
+                                                        List<HealthMetricRecord> history,
+                                                        int currentRiskScore) {
+        String model = normalizeModel(readString(py.get("model"), "PYTHON"));
+        boolean pythonOk = "PYTHON".equals(model);
+
         AiPredictionDTO dto = new AiPredictionDTO();
-        dto.setModel("PYTHON");
-        dto.setHorizonDays(7);
-        dto.setHistoryCount(history.size());
+        dto.setModel(model);
+        dto.setHorizonDays(parseInt(py.get("horizonDays"), 7));
+        dto.setHistoryCount(parseInt(py.get("sampleCount"), history.size()));
 
         Integer predictedRiskScore = parseInt(py.get("predictedRiskScore"), currentRiskScore);
         dto.setPredictedRiskScore(predictedRiskScore);
-        dto.setPredictedLevel(toRiskLevel(predictedRiskScore));
+        dto.setPredictedLevel(readPredictedLevel(py, predictedRiskScore));
 
         BigDecimal predictedWeight = parseDecimal(py.get("predictedWeightKg"));
         dto.setPredictedWeightKg(predictedWeight);
 
-        String trend = normalizeTrend(String.valueOf(py.getOrDefault("trend", "STABLE")));
+        String trend = normalizeTrend(readString(py.get("trend"), "STABLE"));
         dto.setTrend(trend);
 
-        dto.setConfidence(calcConfidence(history.size(), true));
+        BigDecimal confidence = parseDecimal(py.get("confidence"));
+        if (confidence == null) {
+            confidence = calcConfidence(dto.getHistoryCount(), pythonOk);
+        }
+        dto.setConfidence(confidence);
 
-        List<String> basis = buildBasis(history);
+        List<String> basis = readBasis(py.get("basis"));
+        if (basis.isEmpty()) {
+            basis = buildBasis(history);
+        }
         dto.setBasis(basis);
 
-        String suggestion = readString(py.get("suggestion"), "建议继续记录健康数据，保持干预节奏");
+        String suggestion = readString(py.get("suggestion"), buildFallbackSuggestion(trend, predictedRiskScore, history));
         dto.setSuggestion(suggestion);
 
-        String message = buildMessage(predictedRiskScore, trend, predictedWeight, history.size(), true);
+        String message = buildMessage(
+                predictedRiskScore,
+                trend,
+                predictedWeight,
+                dto.getHistoryCount() == null ? history.size() : dto.getHistoryCount(),
+                pythonOk
+        );
         dto.setMessage(message);
 
         return dto;
     }
 
     /**
-     * 降级预测
+     * 本地规则降级预测
      */
     private AiPredictionDTO buildFallbackResult(List<HealthMetricRecord> history, int currentRiskScore) {
         AiPredictionDTO dto = new AiPredictionDTO();
@@ -499,6 +537,27 @@ public class AiInsightServiceImpl implements AiInsightService {
         return "STABLE";
     }
 
+    private String normalizeModel(String model) {
+        if ("PYTHON".equalsIgnoreCase(model)) {
+            return "PYTHON";
+        }
+        return "FALLBACK";
+    }
+
+    private String readPredictedLevel(Map<String, Object> py, int predictedRiskScore) {
+        String level = readString(py.get("predictedLevel"), "");
+        if ("HIGH".equalsIgnoreCase(level)) {
+            return "HIGH";
+        }
+        if ("MID".equalsIgnoreCase(level)) {
+            return "MID";
+        }
+        if ("LOW".equalsIgnoreCase(level)) {
+            return "LOW";
+        }
+        return toRiskLevel(predictedRiskScore);
+    }
+
     private Integer parseInt(Object value, Integer defaultValue) {
         if (value == null) {
             return defaultValue;
@@ -527,6 +586,25 @@ public class AiInsightServiceImpl implements AiInsightService {
         }
         String text = String.valueOf(value).trim();
         return text.isEmpty() ? defaultValue : text;
+    }
+
+    private List<String> readBasis(Object value) {
+        List<String> list = new ArrayList<>();
+        if (!(value instanceof List)) {
+            return list;
+        }
+
+        List<?> raw = (List<?>) value;
+        for (Object item : raw) {
+            if (item == null) {
+                continue;
+            }
+            String text = String.valueOf(item).trim();
+            if (!text.isEmpty()) {
+                list.add(text);
+            }
+        }
+        return list;
     }
 
     private BigDecimal scale2(BigDecimal value) {

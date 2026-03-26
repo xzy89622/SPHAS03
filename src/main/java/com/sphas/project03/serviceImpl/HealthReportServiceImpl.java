@@ -1,20 +1,21 @@
 package com.sphas.project03.serviceImpl;
 
-import com.sphas.project03.controller.dto.WeeklyReportDTO;
+import com.sphas.project03.common.HealthConstants;
 import com.sphas.project03.controller.dto.MonthlyReportDTO;
+import com.sphas.project03.controller.dto.WeeklyReportDTO;
 import com.sphas.project03.entity.HealthRecord;
 import com.sphas.project03.service.HealthRecordService;
 import com.sphas.project03.service.HealthReportService;
 import com.sphas.project03.utils.PdfUtil;
 import org.springframework.stereotype.Service;
-import com.sphas.project03.common.HealthConstants;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 周报业务：统计最近7天
+ * 健康报告业务
+ * 这里统一生成当前周报和当前月报
  */
 @Service
 public class HealthReportServiceImpl implements HealthReportService {
@@ -33,14 +34,14 @@ public class HealthReportServiceImpl implements HealthReportService {
         List<HealthRecord> list = healthRecordService.listByDateRange(userId, from.toString(), to.toString());
 
         WeeklyReportDTO dto = new WeeklyReportDTO();
-        fillCommon(dto, list, from, to);
+        fillWeekly(dto, list, from, to);
         return dto;
     }
 
     @Override
     public byte[] weeklyPdf(Long userId) {
         WeeklyReportDTO dto = weekly(userId);
-        return PdfUtil.buildWeeklyReport(dto); // 生成PDF字节
+        return PdfUtil.buildWeeklyReport(dto);
     }
 
     @Override
@@ -51,7 +52,7 @@ public class HealthReportServiceImpl implements HealthReportService {
         List<HealthRecord> list = healthRecordService.listByDateRange(userId, from.toString(), to.toString());
 
         MonthlyReportDTO dto = new MonthlyReportDTO();
-        fillCommon(dto, list, from, to);
+        fillMonthly(dto, list, from, to);
         return dto;
     }
 
@@ -62,53 +63,46 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     /**
-     * 公共填充逻辑：周报/月报共用
-     * 说明：为了减少重复代码，字段保持一致。
+     * 填充周报
      */
-    private void fillCommon(Object dto, List<HealthRecord> list, LocalDate from, LocalDate to) {
+    private void fillWeekly(WeeklyReportDTO dto, List<HealthRecord> list, LocalDate from, LocalDate to) {
+        dto.setFrom(from.toString());
+        dto.setTo(to.toString());
+        dto.setDays(list == null ? 0 : list.size());
+        dto.setAvgWeight(avgWeight(list));
+        dto.setAvgSteps(avgSteps(list));
+        dto.setAvgSleepHours(avgSleep(list));
+        dto.setWeightTrend(weightTrend(list));
+        dto.setBpRisk(hasBpRisk(list));
+        dto.setSuggestions(buildSuggestions(dto));
+        dto.setSummary(buildSummary(dto));
+    }
 
-        // 统计平均值
-        Double avgWeight = avgWeight(list);
-        Integer avgSteps = avgSteps(list);
-        Double avgSleep = avgSleep(list);
-        String trend = weightTrend(list);
-        Boolean bpRisk = hasBpRisk(list);
-
-        if (dto instanceof WeeklyReportDTO) {
-            WeeklyReportDTO d = (WeeklyReportDTO) dto;
-            d.setFrom(from.toString());
-            d.setTo(to.toString());
-            d.setDays(list.size());
-            d.setAvgWeight(avgWeight);
-            d.setAvgSteps(avgSteps);
-            d.setAvgSleepHours(avgSleep);
-            d.setWeightTrend(trend);
-            d.setBpRisk(bpRisk);
-            d.setSuggestions(buildSuggestions(d));
-            d.setSummary(buildSummary(d));
-            return;
-        }
-
-        if (dto instanceof MonthlyReportDTO) {
-            MonthlyReportDTO d = (MonthlyReportDTO) dto;
-            d.setFrom(from.toString());
-            d.setTo(to.toString());
-            d.setDays(list.size());
-            d.setAvgWeight(avgWeight);
-            d.setAvgSteps(avgSteps);
-            d.setAvgSleepHours(avgSleep);
-            d.setWeightTrend(trend);
-            d.setBpRisk(bpRisk);
-            d.setSuggestions(buildSuggestionsForMonth(d));
-            d.setSummary(buildSummaryForMonth(d));
-        }
+    /**
+     * 填充月报
+     */
+    private void fillMonthly(MonthlyReportDTO dto, List<HealthRecord> list, LocalDate from, LocalDate to) {
+        dto.setFrom(from.toString());
+        dto.setTo(to.toString());
+        dto.setDays(list == null ? 0 : list.size());
+        dto.setAvgWeight(avgWeight(list));
+        dto.setAvgSteps(avgSteps(list));
+        dto.setAvgSleepHours(avgSleep(list));
+        dto.setWeightTrend(weightTrend(list));
+        dto.setBpRisk(hasBpRisk(list));
+        dto.setSuggestions(buildSuggestionsForMonth(dto));
+        dto.setSummary(buildSummaryForMonth(dto));
     }
 
     private Double avgWeight(List<HealthRecord> list) {
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+
         double sum = 0;
         int cnt = 0;
         for (HealthRecord r : list) {
-            if (r.getWeightKg() != null) {
+            if (r != null && r.getWeightKg() != null) {
                 sum += r.getWeightKg();
                 cnt++;
             }
@@ -117,10 +111,14 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     private Integer avgSteps(List<HealthRecord> list) {
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+
         long sum = 0;
         int cnt = 0;
         for (HealthRecord r : list) {
-            if (r.getSteps() != null) {
+            if (r != null && r.getSteps() != null) {
                 sum += r.getSteps();
                 cnt++;
             }
@@ -129,10 +127,14 @@ public class HealthReportServiceImpl implements HealthReportService {
     }
 
     private Double avgSleep(List<HealthRecord> list) {
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+
         double sum = 0;
         int cnt = 0;
         for (HealthRecord r : list) {
-            if (r.getSleepHours() != null) {
+            if (r != null && r.getSleepHours() != null) {
                 sum += r.getSleepHours();
                 cnt++;
             }
@@ -140,32 +142,61 @@ public class HealthReportServiceImpl implements HealthReportService {
         return cnt == 0 ? null : round(sum / cnt);
     }
 
+    /**
+     * 体重趋势
+     * 注意：
+     * listByDateRange 现在是按 record_date 升序查的
+     * 所以第一个是最早，最后一个才是最新
+     */
     private String weightTrend(List<HealthRecord> list) {
-        if (list == null || list.size() < 2) return "数据不足";
+        if (list == null || list.size() < 2) {
+            return "数据不足";
+        }
 
-        // 假设 list 是按时间倒序排列（最新在0），若你的查询排序不同要调一下
-        HealthRecord latest = list.get(0);
-        HealthRecord oldest = list.get(list.size() - 1);
+        HealthRecord earliest = firstRecordWithWeight(list);
+        HealthRecord latest = lastRecordWithWeight(list);
 
-        if (latest.getWeightKg() == null || oldest.getWeightKg() == null) return "数据不足";
+        if (earliest == null || latest == null) {
+            return "数据不足";
+        }
 
-        double diff = latest.getWeightKg() - oldest.getWeightKg();
+        double diff = latest.getWeightKg() - earliest.getWeightKg();
 
-        // 0.5kg 缓冲，避免误判
+        // 留一点缓冲，避免小波动被误判
         if (Math.abs(diff) < 0.5) {
             return "稳定";
         }
         return diff > 0 ? "上升" : "下降";
     }
 
+    private HealthRecord firstRecordWithWeight(List<HealthRecord> list) {
+        for (HealthRecord r : list) {
+            if (r != null && r.getWeightKg() != null) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    private HealthRecord lastRecordWithWeight(List<HealthRecord> list) {
+        for (int i = list.size() - 1; i >= 0; i--) {
+            HealthRecord r = list.get(i);
+            if (r != null && r.getWeightKg() != null) {
+                return r;
+            }
+        }
+        return null;
+    }
+
     private boolean hasBpRisk(List<HealthRecord> list) {
-        if (list == null || list.isEmpty()) return false;
+        if (list == null || list.isEmpty()) {
+            return false;
+        }
 
         for (HealthRecord r : list) {
-            if (r.getSystolic() != null && r.getDiastolic() != null) {
-                // 用统一阈值判断
-                if (r.getSystolic() >= HealthConstants.BP_SYS_MID ||
-                        r.getDiastolic() >= HealthConstants.BP_DIA_MID) {
+            if (r != null && r.getSystolic() != null && r.getDiastolic() != null) {
+                if (r.getSystolic() >= HealthConstants.BP_SYS_MID
+                        || r.getDiastolic() >= HealthConstants.BP_DIA_MID) {
                     return true;
                 }
             }
@@ -194,7 +225,6 @@ public class HealthReportServiceImpl implements HealthReportService {
         return tips;
     }
 
-    // 月报建议：阈值稍微放宽一点（30天平均）
     private List<String> buildSuggestionsForMonth(MonthlyReportDTO dto) {
         List<String> tips = new ArrayList<>();
 
@@ -216,22 +246,36 @@ public class HealthReportServiceImpl implements HealthReportService {
         return tips;
     }
 
-    private String buildSummaryForMonth(MonthlyReportDTO dto) {
-        if (dto.getDays() == null || dto.getDays() == 0) {
-            return "本月暂无记录，建议坚持每日记录";
-        }
-        if (Boolean.TRUE.equals(dto.getBpRisk())) return "本月血压有偏高风险";
-        if ("上升".equals(dto.getWeightTrend())) return "本月体重略有上升";
-        return "本月整体状态良好";
-    }
-
     private String buildSummary(WeeklyReportDTO dto) {
         if (dto.getDays() == null || dto.getDays() == 0) {
             return "本周暂无记录，建议坚持每日记录";
         }
-        if (Boolean.TRUE.equals(dto.getBpRisk())) return "本周血压有偏高风险";
-        if ("上升".equals(dto.getWeightTrend())) return "本周体重略有上升";
+        if (Boolean.TRUE.equals(dto.getBpRisk())) {
+            return "本周血压有偏高风险";
+        }
+        if ("上升".equals(dto.getWeightTrend())) {
+            return "本周体重略有上升";
+        }
+        if ("下降".equals(dto.getWeightTrend())) {
+            return "本周体重整体有下降趋势";
+        }
         return "本周整体状态良好";
+    }
+
+    private String buildSummaryForMonth(MonthlyReportDTO dto) {
+        if (dto.getDays() == null || dto.getDays() == 0) {
+            return "本月暂无记录，建议坚持每日记录";
+        }
+        if (Boolean.TRUE.equals(dto.getBpRisk())) {
+            return "本月血压有偏高风险";
+        }
+        if ("上升".equals(dto.getWeightTrend())) {
+            return "本月体重略有上升";
+        }
+        if ("下降".equals(dto.getWeightTrend())) {
+            return "本月体重整体有下降趋势";
+        }
+        return "本月整体状态良好";
     }
 
     private double round(double v) {

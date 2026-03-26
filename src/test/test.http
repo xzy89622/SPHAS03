@@ -1,147 +1,360 @@
-#POST http://127.0.0.1:8080/api/health/record
-#Content-Type: application/json
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
-#
-#{
-#  "recordDate": "2026-01-26",
-#  "heightCm": 175.0,
-#  "weightKg": 70.5,
-#  "systolic": 120,
-#  "diastolic": 80,
-#  "heartRate": 72,
-#  "steps": 8000,
-#  "sleepHours": 7.5,
-#  "remark": "状态不错"
-#}
+@host = http://localhost:8080
+@json = application/json
 
-#GET http://127.0.0.1:8080/api/health/latest?limit=7
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
+### =========================================================
+### 0. 认证模块
+### =========================================================
 
-#GET http://127.0.0.1:8080/api/health/range?from=2026-01-01&to=2026-01-31
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
-
-
-#GET http://127.0.0.1:8080/api/health/report/weekly
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
-
-#GET http://127.0.0.1:8080/api/health/report/weekly/pdf
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk0MTU3MzAsImV4cCI6MTc2OTQyMjkzMH0.eFfeuPaRFcv8GvYBAgJsEczwCgbmcLBGzi8AOgDIH-E
-
-
-
-#POST http://localhost:8080/api/auth/login
-#Content-Type: application/json
-#
-#{
-#  "username": "test01",
-#  "password": "123456"
-#}
-
-#GET http://localhost:8080/api/article/list
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-
-#POST http://localhost:8080/api/article/admin/publish
-#Content-Type: application/json
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-#
-#{
-#  "title": "健康饮食小常识",
-#  "summary": "每天吃什么更健康",
-#  "coverUrl": "https://example.com/a.jpg",
-#  "content": "少油少盐，多吃蔬菜水果，坚持运动。"
-#}
-
-#GET http://localhost:8080/api/article/list
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-
-#GET http://localhost:8080/api/feedback/my
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-
-#POST http://localhost:8080/api/feedback/upload
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-#Content-Type: multipart/form-data
-#
-
-
-#### 上传反馈图片（IntelliJ HTTP Client 正确写法）
-#POST http://localhost:8080/api/feedback/upload
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-#
-#
-#--boundary
-#Content-Disposition: form-data; name="file"; filename="test.png"
-#Content-Type: image/png
-#
-#< D:/SPHAS/SPHAS_03/SPHAS/upload/feedback/test.png
-#--boundary--
-
-
-### 上传反馈图片（显式指定 multipart + boundary）
-#POST http://localhost:8080/api/feedback/upload
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-#Content-Type: multipart/form-data; boundary=boundary
-#
-#--boundary
-#Content-Disposition: form-data; name="file"; filename="test.png"
-#Content-Type: image/png
-#
-#< D:/SPHAS/SPHAS_03/SPHAS/upload/feedback/test.png
-#--boundary--
-
-#POST http://localhost:8080/api/feedback/submit
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-#Content-Type: application/json
-#
-#{
-#  "title": "反馈标题",
-#  "content": "反馈内容",
-#  "attachmentUrls": [
-#    "http://localhost:8080/upload/feedback/test.png"
-#  ]
-#}
-
-#GET http://localhost:8080/api/feedback/1/detail
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-
-#POST http://localhost:8080/api/feedback/submit
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-#Content-Type: application/json
-#
-#{
-#  "title": "反馈标题",
-#  "content": "反馈内容",
-#  "attachmentUrls": [
-#    "http://localhost:8080/upload/feedback/test.png"
-#  ]
-#}
-
-
-#GET http://localhost:8080/api/feedback/3/detail
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-
-#GET http://localhost:8080/api/feedback/3/detail
-#Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1ODI2NTUsImV4cCI6MTc3MDE4NzQ1NX0.EReqTOV_VPardFi-O7DugvGOjUyGlo3SpMtdIcjQIDM
-
-#POST http://localhost:8080/api/auth/register
-#Content-Type: application/json
-#
-#{
-#  "username": "admin01",
-#  "password": "123456"
-#}
-
-#POST http://localhost:8080/api/auth/login
-#Content-Type: application/json
-#
-#{
-#  "username": "admin01",
-#  "password": "123456"
-#}
-
-POST http://localhost:8080/api/feedback/3/reply
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3Njk1OTcwNDcsImV4cCI6MTc3MDIwMTg0N30.-KVqBI63YsJJjRxxzsyZO5DKozqNPpDtJa3K9puK400
-Content-Type: application/json
+### 注册普通用户
+POST {{host}}/api/auth/register
+Content-Type: {{json}}
 
 {
-"content": "这是管理员回复"
+  "username": "test_user_01",
+  "password": "123456"
 }
+
+### 普通用户登录
+POST {{host}}/api/auth/login
+Content-Type: {{json}}
+
+{
+  "username": "test01",
+  "password": "123456"
+}
+
+### 管理员登录
+POST {{host}}/api/auth/login
+Content-Type: {{json}}
+
+{
+  "username": "admin01",
+  "password": "123456"
+}
+
+### 这里把登录拿到的 token 手动填进来
+@userToken = Bearer 请替换成普通用户token
+@adminToken = Bearer 请替换成管理员token
+@advisorToken = Bearer 请替换成AI顾问token
+
+
+### =========================================================
+### 1. 用户中心
+### =========================================================
+
+### 获取个人资料
+GET {{host}}/api/user/profile
+Authorization: {{userToken}}
+
+### 更新个人资料
+PUT {{host}}/api/user/profile
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "nickname": "测试用户",
+  "age": 23,
+  "gender": "男",
+  "heightCm": 175,
+  "initialWeightKg": 78.5,
+  "phone": "13800000001"
+}
+
+
+### =========================================================
+### 2. 健康档案与体征数据
+### =========================================================
+
+### 新增健康记录
+POST {{host}}/api/health/record
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "recordDate": "2026-03-25",
+  "heightCm": 175.0,
+  "weightKg": 76.5,
+  "systolic": 128,
+  "diastolic": 84,
+  "heartRate": 76,
+  "steps": 7200,
+  "sleepHours": 6.8,
+  "remark": "今天状态还行"
+}
+
+### 查询最近7条健康记录
+GET {{host}}/api/health/latest?limit=7
+Authorization: {{userToken}}
+
+### 按时间范围查询健康记录
+GET {{host}}/api/health/range?from=2026-03-01&to=2026-03-31
+Authorization: {{userToken}}
+
+### 风险分析
+GET {{host}}/api/risk/latest
+Authorization: {{userToken}}
+
+### 健康趋势看板
+GET {{host}}/api/dashboard/trend?days=30
+Authorization: {{userToken}}
+
+
+### =========================================================
+### 3. 周报月报
+### =========================================================
+
+### 当前周报
+GET {{host}}/api/health/report/weekly
+Authorization: {{userToken}}
+
+### 当前月报
+GET {{host}}/api/health/report/monthly
+Authorization: {{userToken}}
+
+### 历史报告分页
+GET {{host}}/api/health/report/history/page?pageNum=1&pageSize=10
+Authorization: {{userToken}}
+
+### 历史报告详情
+GET {{host}}/api/health/report/history/detail?id=1
+Authorization: {{userToken}}
+
+### 周报 PDF
+GET {{host}}/api/health/report/weekly/pdf
+Authorization: {{userToken}}
+
+
+### =========================================================
+### 4. 推荐与计划
+### =========================================================
+
+### 获取今日推荐
+GET {{host}}/api/recommend/today
+Authorization: {{userToken}}
+
+### 获取我的计划
+GET {{host}}/api/plan/current
+Authorization: {{userToken}}
+
+### 计划打卡
+POST {{host}}/api/plan/checkin
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "userPlanId": 1,
+  "checkinDate": "2026-03-25",
+  "dietDone": 1,
+  "sportDone": 1,
+  "remark": "今天完成得不错"
+}
+
+
+### =========================================================
+### 5. 公告、文章、反馈、消息
+### =========================================================
+
+### 公告列表
+GET {{host}}/api/notice/list
+Authorization: {{userToken}}
+
+### 文章列表
+GET {{host}}/api/article/list
+Authorization: {{userToken}}
+
+### 我的反馈列表
+GET {{host}}/api/feedback/my
+Authorization: {{userToken}}
+
+### 提交反馈
+POST {{host}}/api/feedback/submit
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "title": "测试反馈标题",
+  "content": "这里是测试反馈内容",
+  "attachmentUrls": []
+}
+
+### 查看反馈详情
+GET {{host}}/api/feedback/1/detail
+Authorization: {{userToken}}
+
+### 我的消息分页
+GET {{host}}/api/message/page?pageNum=1&pageSize=10
+Authorization: {{userToken}}
+
+### 消息标记已读
+POST {{host}}/api/message/read/1
+Authorization: {{userToken}}
+
+
+### =========================================================
+### 6. 社交、挑战、积分、勋章
+### =========================================================
+
+### 社区帖子列表
+GET {{host}}/api/social/post/page?pageNum=1&pageSize=10
+Authorization: {{userToken}}
+
+### 发布帖子
+POST {{host}}/api/social/post
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "content": "今天坚持运动30分钟，继续加油",
+  "imageUrls": []
+}
+
+### 评论帖子
+POST {{host}}/api/social/comment
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "postId": 1,
+  "content": "一起坚持"
+}
+
+### 点赞帖子
+POST {{host}}/api/social/like/1
+Authorization: {{userToken}}
+
+### 挑战列表
+GET {{host}}/api/challenge/list
+Authorization: {{userToken}}
+
+### 参加挑战
+POST {{host}}/api/challenge/join/1
+Authorization: {{userToken}}
+
+### 积分排行榜
+GET {{host}}/api/leaderboard/points/top?limit=10
+Authorization: {{userToken}}
+
+### 我的勋章
+GET {{host}}/api/badge/my
+Authorization: {{userToken}}
+
+
+### =========================================================
+### 7. 管理端接口
+### =========================================================
+
+### 管理端首页概览
+GET {{host}}/api/admin/dashboard/overview
+Authorization: {{adminToken}}
+
+### 用户分页
+GET {{host}}/api/admin/user/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+### 公告分页
+GET {{host}}/api/notice/admin/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+### 发布公告
+POST {{host}}/api/notice/admin/publish
+Authorization: {{adminToken}}
+Content-Type: {{json}}
+
+{
+  "title": "系统联调测试公告",
+  "content": "这是一条联调用的测试公告",
+  "status": 1
+}
+
+### 健康文章分页
+GET {{host}}/api/article/admin/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+### 反馈分页
+GET {{host}}/api/feedback/admin/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+### 回复反馈
+POST {{host}}/api/feedback/3/reply
+Authorization: {{adminToken}}
+Content-Type: {{json}}
+
+{
+  "content": "这是管理员回复"
+}
+
+### 消息管理分页
+GET {{host}}/api/message/admin/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+### 社区审核列表
+GET {{host}}/api/social/audit/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+### 排行榜管理
+GET {{host}}/api/admin/stats/summary
+Authorization: {{adminToken}}
+
+### BMI 标准列表
+GET {{host}}/api/bmi-standard/list
+Authorization: {{adminToken}}
+
+### 题库列表
+GET {{host}}/api/question-bank/page?pageNum=1&pageSize=10
+Authorization: {{adminToken}}
+
+
+### =========================================================
+### 8. AI 与顾问模块
+### =========================================================
+
+### AI 预测
+POST {{host}}/api/ai/predict
+Authorization: {{userToken}}
+Content-Type: {{json}}
+
+{
+  "horizonDays": 7
+}
+
+### 顾问工作台
+GET {{host}}/api/advisor/dashboard
+Authorization: {{advisorToken}}
+
+### 顾问发送建议
+POST {{host}}/api/advisor/advice/send
+Authorization: {{advisorToken}}
+Content-Type: {{json}}
+
+{
+  "userId": 1,
+  "title": "健康建议",
+  "content": "最近血压有点高，先注意低盐饮食和规律作息"
+}
+
+
+### =========================================================
+### 9. 权限校验
+### =========================================================
+
+### 普通用户误访管理接口，应该失败
+GET {{host}}/api/admin/dashboard/overview
+Authorization: {{userToken}}
+
+### 未登录访问个人接口，应该失败
+GET {{host}}/api/user/profile
+
+
+### =========================================================
+### 10. 联调检查顺序
+### =========================================================
+### 建议按下面顺序跑：
+### 1. 登录
+### 2. 用户资料
+### 3. 健康记录
+### 4. 风险分析 / 推荐 / 报告
+### 5. 公告 / 文章 / 反馈 / 消息
+### 6. 社交 / 挑战 / 排行榜 / 勋章
+### 7. 管理端接口
+### 8. AI 与顾问接口
+### 9. 权限拦截检查

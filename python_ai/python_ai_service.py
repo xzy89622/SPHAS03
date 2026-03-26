@@ -1,17 +1,9 @@
-# -*- coding: utf-8 -*-
-from fastapi import FastAPI
-from pydantic import BaseModel
+# 这个文件现在只保留成兼容入口
+# 以前这里有另一套 FastAPI 预测逻辑，容易和 app.py 打架
+# 现在统一都走 app.py 里的 Flask 服务
+# 以后不管你启动哪个文件，最终都是同一套 AI 逻辑
 
-app = FastAPI()
+from app import app
 
-class Features(BaseModel):
-    userId: int
-    riskScore: int
-
-@app.post("/predict")
-def predict(f: Features):
-    predicted = min(100, f.riskScore + 5)
-    return {
-        "predictedRiskScore": predicted,
-        "suggestion": "（Python模型）建议控制饮食，增加运动，连续监测7天"
-    }
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001, debug=True)
