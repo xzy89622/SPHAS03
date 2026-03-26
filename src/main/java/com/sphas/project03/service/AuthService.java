@@ -15,6 +15,12 @@ public interface AuthService {
 
     String login(String username, String password);
 
+    // 微信快捷登录
+    String wxLogin(String code, String nickname, String avatarUrl);
+
+    // 微信手机号授权一键登录 / 自动注册
+    String wxPhoneLogin(String loginCode, String phoneCode, String nickname, String avatarUrl);
+
     // 首次初始化管理员（无 token，但需要 initKey 且只能成功一次）
     Long bootstrapAdmin(String username, String password, String nickname, String initKey);
 

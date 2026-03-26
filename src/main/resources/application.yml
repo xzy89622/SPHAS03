@@ -1,12 +1,12 @@
 server:
-  port: 8080 # 项目端口
+  port: 8080
 
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver # MySQL8驱动
+    driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/project03?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root # 数据库账号
-    password: 123456 # 数据库密码
+    username: root
+    password: 123456
   servlet:
     multipart:
       enabled: true
@@ -17,35 +17,37 @@ spring:
       matching-strategy: ant_path_matcher
 
   redis:
-    host: localhost # Redis地址
-    port: 6379      # Redis端口
-    timeout: 3000ms # 超时时间
+    host: localhost
+    port: 6379
+    timeout: 3000ms
 
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true # 下划线转驼峰
+    map-underscore-to-camel-case: true
   global-config:
     db-config:
-      id-type: auto # 主键自增
-  mapper-locations: classpath*:/mapper/**/*.xml # 没有xml也不影响（但写在这儿更规范）
+      id-type: auto
+  mapper-locations: classpath*:/mapper/**/*.xml
 
 jwt:
   secret: "project03_jwt_secret_key_32_bytes_minimum"
   expireMinutes: 10080
 
 app:
-  adminInitKey: "SPHAS03_INIT_ADMIN_2026"   # 你可以改成更复杂的，别泄露
-  baseUrl: "http://localhost:8080"          # 部署到服务器后记得改成你的域名/公网IP
+  adminInitKey: "SPHAS03_INIT_ADMIN_2026"
+  baseUrl: "http://localhost:8080"
   backup:
-    # mysqldump 命令（Windows如果没加环境变量，就写绝对路径）
-    # 示例："C:/Program Files/MySQL/MySQL Server 8.0/bin/mysqldump.exe"
     mysqldump: mysqldump
-    # 备份目录（相对路径就是项目运行目录下的 backups）
     dir: backups
 
 ai:
   python:
     baseUrl: http://127.0.0.1:5001
+
+wechat:
+  miniapp:
+    appid: wxc7bae19c57694f00
+    secret: a8e8049f96b659b7a29aca34c7383d78
 
 springdoc:
   api-docs:

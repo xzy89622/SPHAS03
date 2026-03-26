@@ -1,12 +1,14 @@
 package com.sphas.project03.controller;
 
 import com.sphas.project03.common.R;
+import com.sphas.project03.controller.dto.BootstrapAdminDTO;
 import com.sphas.project03.controller.dto.LoginDTO;
 import com.sphas.project03.controller.dto.RegisterDTO;
+import com.sphas.project03.controller.dto.WxLoginDTO;
+import com.sphas.project03.controller.dto.WxPhoneLoginDTO;
 import com.sphas.project03.service.AuthService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import com.sphas.project03.controller.dto.BootstrapAdminDTO;
 
 import javax.validation.Valid;
 
@@ -30,17 +32,37 @@ public class AuthController {
         return R.ok(id);
     }
 
-
     @PostMapping("/login")
     public R<String> login(@RequestBody @Valid LoginDTO dto) {
         String token = authService.login(dto.getUsername(), dto.getPassword());
-        return R.ok(token); // 返回JWT
+        return R.ok(token);
     }
+
+    @PostMapping("/wx-login")
+    public R<String> wxLogin(@RequestBody @Valid WxLoginDTO dto) {
+        String token = authService.wxLogin(dto.getCode(), dto.getNickname(), dto.getAvatarUrl());
+        return R.ok(token);
+    }
+
+    @PostMapping("/wx-phone-login")
+    public R<String> wxPhoneLogin(@RequestBody @Valid WxPhoneLoginDTO dto) {
+        String token = authService.wxPhoneLogin(
+                dto.getLoginCode(),
+                dto.getPhoneCode(),
+                dto.getNickname(),
+                dto.getAvatarUrl()
+        );
+        return R.ok(token);
+    }
+
     @PostMapping("/bootstrap-admin")
     public R<Long> bootstrapAdmin(@RequestBody @Valid BootstrapAdminDTO dto) {
-        Long id = authService.bootstrapAdmin(dto.getUsername(), dto.getPassword(), dto.getNickname(), dto.getInitKey());
+        Long id = authService.bootstrapAdmin(
+                dto.getUsername(),
+                dto.getPassword(),
+                dto.getNickname(),
+                dto.getInitKey()
+        );
         return R.ok(id);
     }
-
 }
-

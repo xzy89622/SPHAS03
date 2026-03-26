@@ -31,6 +31,15 @@ public class SysUser {
     // 手机号
     private String phone;
 
+    // 微信小程序 openid
+    private String wxOpenid;
+
+    // 微信 unionid
+    private String wxUnionid;
+
+    // 头像地址
+    private String avatarUrl;
+
     // 年龄
     private Integer age;
 
@@ -101,6 +110,30 @@ public class SysUser {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getWxOpenid() {
+        return wxOpenid;
+    }
+
+    public void setWxOpenid(String wxOpenid) {
+        this.wxOpenid = wxOpenid;
+    }
+
+    public String getWxUnionid() {
+        return wxUnionid;
+    }
+
+    public void setWxUnionid(String wxUnionid) {
+        this.wxUnionid = wxUnionid;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public Integer getAge() {
